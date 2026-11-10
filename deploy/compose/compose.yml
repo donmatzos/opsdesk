@@ -23,7 +23,7 @@ services:
 
   # Full stack from the Dockerfile: docker compose -f deploy/compose/compose.yml --profile app up --build
   app:
-    profiles: [app]
+    profiles: [app, observability]
     build: ../..
     depends_on:
       postgres:
@@ -34,8 +34,62 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: demo
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/opsdesk
+      OPSDESK_ENV: compose
     ports:
       - "8080:8080"
 
+  # Local Elastic stack: docker compose -f deploy/compose/compose.yml --profile observability up -d
+  # (or tools/elastic-verify.sh). Security is off on purpose for a local sandbox: no password exists, and both
+  # services listen on 127.0.0.1 only. Needs ~2-3 GB RAM.
+  elasticsearch:
+    profiles: [observability]
+    image: elasticsearch:9.5.5
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    ports:
+      - "127.0.0.1:9200:9200"
+    volumes:
+      - elastic-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
+  kibana:
+    profiles: [observability]
+    image: kibana:9.5.5
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - "127.0.0.1:5601:5601"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:5601/api/status | grep -q '\"level\":\"available\"'"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
+  # Ships the container log files (like a DaemonSet reads /var/log/containers in Kubernetes) and keeps only
+  # opsdesk's ECS lines. Linux Docker path; root is needed to read /var/lib/docker/containers (read-only mount).
+  filebeat:
+    profiles: [observability]
+    image: elastic/filebeat:9.5.5
+    user: root
+    command: ["filebeat", "-e", "--strict.perms=false"]
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - filebeat-data:/usr/share/filebeat/data
+
 volumes:
   postgres-data:
+  elastic-data:
+  filebeat-data:

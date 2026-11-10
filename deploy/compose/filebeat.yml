@@ -1,0 +1,32 @@
+# Filebeat for the local Elastic stack: read Docker's JSON log files, decode the app's ECS JSON lines and keep
+# only opsdesk's events (service.name). Index opsdesk-logs-YYYY.MM.DD; Kibana data view opsdesk-logs-*.
+filebeat.inputs:
+  - type: filestream
+    id: docker-containers
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    parsers:
+      - container: ~
+
+processors:
+  # The app's line is ECS JSON inside the Docker log record: lift its fields to the top level.
+  - decode_json_fields:
+      fields: ["message"]
+      target: ""
+      overwrite_keys: true
+      add_error_key: false
+      # "trace.id": "..." -> trace: {id: ...}, so all ECS fields are proper objects.
+      expand_keys: true
+  - drop_event:
+      when:
+        not:
+          equals:
+            service.name: opsdesk
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  index: "opsdesk-logs-%{+yyyy.MM.dd}"
+
+setup.ilm.enabled: false
+setup.template.name: opsdesk-logs
+setup.template.pattern: "opsdesk-logs-*"
