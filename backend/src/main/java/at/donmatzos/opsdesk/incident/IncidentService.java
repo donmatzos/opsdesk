@@ -3,8 +3,10 @@ package at.donmatzos.opsdesk.incident;
 import at.donmatzos.opsdesk.catalog.MonitoredServiceRepository;
 import at.donmatzos.opsdesk.common.NotFoundException;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,11 +16,14 @@ public class IncidentService {
     private final IncidentRepository incidents;
     private final MonitoredServiceRepository services;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
-    IncidentService(IncidentRepository incidents, MonitoredServiceRepository services, Clock clock) {
+    IncidentService(IncidentRepository incidents, MonitoredServiceRepository services, Clock clock,
+                    ApplicationEventPublisher events) {
         this.incidents = incidents;
         this.services = services;
         this.clock = clock;
+        this.events = events;
     }
 
     @Transactional
@@ -27,7 +32,10 @@ public class IncidentService {
         if (!services.existsById(request.serviceId())) {
             throw new UnknownServiceException(request.serviceId());
         }
-        return incidents.save(Incident.open(request.serviceId(), request.severity(), request.summary(), clock.instant()));
+        Incident opened = incidents.save(
+                Incident.open(request.serviceId(), request.severity(), request.summary(), clock.instant()));
+        events.publishEvent(new IncidentOpened(opened.id(), opened.severity()));
+        return opened;
     }
 
     @Transactional(readOnly = true)
@@ -42,6 +50,11 @@ public class IncidentService {
 
     @Transactional
     public Incident changeState(long id, IncidentState next) {
-        return incidents.save(get(id).transitionTo(next, clock.instant()));
+        Incident current = get(id);
+        Instant now = clock.instant();
+        Incident changed = incidents.save(current.transitionTo(next, now));
+        events.publishEvent(new IncidentStateChanged(changed.id(), changed.severity(), current.state(), next,
+                current.openedAt(), now));
+        return changed;
     }
 }

@@ -24,6 +24,14 @@ management:
     health:
       probes:
         enabled: true
+  endpoints:
+    web:
+      exposure:
+        # Only what operations needs; everything else (env, beans, ...) stays closed.
+        include: health,info,prometheus
+  metrics:
+    tags:
+      application: opsdesk
 
 ---
 # Demo data for local runs, tests and the showcase; never active in a real stage.
