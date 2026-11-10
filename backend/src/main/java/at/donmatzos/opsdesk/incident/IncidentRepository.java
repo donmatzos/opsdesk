@@ -8,4 +8,6 @@ public interface IncidentRepository extends ListCrudRepository<Incident, Long> {
     List<Incident> findAllByOrderByOpenedAtDesc();
 
     List<Incident> findByStateOrderByOpenedAtDesc(IncidentState state);
+
+    long countByState(IncidentState state);
 }

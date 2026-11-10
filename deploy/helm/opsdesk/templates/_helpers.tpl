@@ -71,3 +71,20 @@ capabilities:
 seccompProfile:
   type: RuntimeDefault
 {{- end }}
+
+{{/* MOCK: Datadog Unified Service Tagging labels (only with datadog.enabled). */}}
+{{- define "opsdesk.datadogLabels" -}}
+{{- if .Values.datadog.enabled }}
+tags.datadoghq.com/env: {{ .Values.datadog.env | quote }}
+tags.datadoghq.com/service: {{ include "opsdesk.name" . | quote }}
+tags.datadoghq.com/version: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
+{{- end }}
+{{- end }}
+
+{{/* Spring profiles: the configured ones plus "datadog" when datadog.enabled. */}}
+{{- define "opsdesk.springProfiles" -}}
+{{- $profiles := list }}
+{{- with .Values.springProfiles }}{{- $profiles = append $profiles . }}{{- end }}
+{{- if .Values.datadog.enabled }}{{- $profiles = append $profiles "datadog" }}{{- end }}
+{{- join "," $profiles }}
+{{- end }}

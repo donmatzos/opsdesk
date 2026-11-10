@@ -22,6 +22,17 @@ tests:
             podSelector: {}
       - equal: { path: "spec.ingress[0].ports", value: [{ port: 8080, protocol: TCP }] }
 
+  # Metrics only from inside the namespace (e.g. a Prometheus or agent there), never from the router.
+  - it: allows the management port only from the own namespace
+    asserts:
+      - equal:
+          path: spec.ingress[1]
+          value:
+            from:
+              - podSelector: {}
+            ports:
+              - { port: 9090, protocol: TCP }
+
   - it: can be switched off
     set:
       networkPolicy.enabled: false

@@ -16,3 +16,8 @@ spec:
       {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePort }}
       nodePort: {{ .Values.service.nodePort }}
       {{- end }}
+    # Actuator (health, prometheus) for in-cluster scraping; the Route/Ingress target only "http".
+    - name: metrics
+      port: 9090
+      targetPort: metrics
+      protocol: TCP

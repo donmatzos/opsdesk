@@ -54,20 +54,33 @@ tests:
             name: tmp
             emptyDir: {}
 
-  - it: probes the actuator health groups
+  - it: probes /livez and /readyz on the app port
     asserts:
       - equal:
           path: spec.template.spec.containers[0].livenessProbe.httpGet
-          value: { path: /actuator/health/liveness, port: http }
+          value: { path: /livez, port: http }
       - equal:
           path: spec.template.spec.containers[0].readinessProbe.httpGet
-          value: { path: /actuator/health/readiness, port: http }
+          value: { path: /readyz, port: http }
       - equal:
           path: spec.template.spec.containers[0].startupProbe.httpGet
-          value: { path: /actuator/health/liveness, port: http }
+          value: { path: /livez, port: http }
       - contains:
           path: spec.template.spec.containers[0].ports
           content: { name: http, containerPort: 8080, protocol: TCP }
+
+  # Actuator (incl. /actuator/prometheus) has its own port that no Route/Ingress points to.
+  - it: exposes the management port for Prometheus only
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content: { name: metrics, containerPort: 9090, protocol: TCP }
+      - equal:
+          path: spec.template.metadata.annotations["prometheus.io/port"]
+          value: "9090"
+      - equal:
+          path: spec.template.metadata.annotations["prometheus.io/path"]
+          value: /actuator/prometheus
 
   - it: reads the database password from the Secret, never from values
     asserts:

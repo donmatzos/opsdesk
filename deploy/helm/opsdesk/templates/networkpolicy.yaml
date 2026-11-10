@@ -25,4 +25,10 @@ spec:
       ports:
         - port: 8080
           protocol: TCP
+    # Management port only from the own namespace (Prometheus/agent there), never from the router.
+    - from:
+        - podSelector: {}
+      ports:
+        - port: 9090
+          protocol: TCP
 {{- end }}

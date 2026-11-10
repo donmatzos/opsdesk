@@ -15,6 +15,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -25,14 +26,21 @@ public class IncidentServiceTest {
 
     private IncidentRepository incidents;
     private MonitoredServiceRepository services;
+    private ApplicationEventPublisher events;
     private IncidentService service;
 
     @BeforeMethod
     public void setUp() {
         incidents = mock(IncidentRepository.class);
         services = mock(MonitoredServiceRepository.class);
-        service = new IncidentService(incidents, services, Clock.fixed(NOW, ZoneOffset.UTC));
-        when(incidents.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        events = mock(ApplicationEventPublisher.class);
+        service = new IncidentService(incidents, services, Clock.fixed(NOW, ZoneOffset.UTC), events);
+        // Like the database: a new incident gets an id on save.
+        when(incidents.save(any())).thenAnswer(invocation -> {
+            Incident i = invocation.getArgument(0);
+            return i.id() != null ? i
+                    : new Incident(99L, i.serviceId(), i.severity(), i.state(), i.summary(), i.openedAt(), i.resolvedAt(), 0L);
+        });
     }
 
     @Test
@@ -69,6 +77,27 @@ public class IncidentServiceTest {
     public void shouldFailWhenIncidentIsUnknown() {
         when(incidents.findById(5L)).thenReturn(Optional.empty());
         service.changeState(5L, IncidentState.RESOLVED);
+    }
+
+    @Test
+    public void shouldPublishIncidentOpened() {
+        when(services.existsById(1L)).thenReturn(true);
+
+        service.open(new CreateIncidentRequest(1L, Severity.SEV1, "Database unreachable"));
+
+        verify(events).publishEvent(new IncidentOpened(99L, Severity.SEV1));
+    }
+
+    @Test
+    public void shouldPublishStateChangeWithTimes() {
+        Instant opened = NOW.minusSeconds(600);
+        when(incidents.findById(5L)).thenReturn(Optional.of(
+                new Incident(5L, 1L, Severity.SEV2, IncidentState.OPEN, "x", opened, null, 0L)));
+
+        service.changeState(5L, IncidentState.RESOLVED);
+
+        verify(events).publishEvent(new IncidentStateChanged(5L, Severity.SEV2, IncidentState.OPEN,
+                IncidentState.RESOLVED, opened, NOW));
     }
 
     @Test

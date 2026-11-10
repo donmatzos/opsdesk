@@ -17,13 +17,46 @@ spring:
 server:
   shutdown: graceful
 
-# Kubernetes probes (/actuator/health/liveness, /readiness). Explicit, so they also exist outside a cluster
-# (tests, smoke test) and do not depend on a default.
+# Actuator on its own port: never routed to the outside (Route/Ingress go to 8080 only); Prometheus scrapes 9090.
+# Probes are additionally served on the app port as /livez and /readyz, so Kubernetes and smoke tests use 8080.
 management:
+  server:
+    port: 9090
   endpoint:
     health:
       probes:
         enabled: true
+        add-additional-paths: true
+  endpoints:
+    web:
+      exposure:
+        # Only what operations needs; everything else (env, beans, ...) stays closed.
+        include: health,info,prometheus
+  metrics:
+    tags:
+      application: opsdesk
+  # MOCK: Datadog export is off; profile "datadog" below switches it on (key from the environment only).
+  datadog:
+    metrics:
+      export:
+        enabled: false
+  tracing:
+    sampling:
+      probability: 1.0
+
+# Structured logs: the container image sets LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs (Elastic Common Schema);
+# a local java -jar stays human-readable.
+logging:
+  structured:
+    ecs:
+      service:
+        name: opsdesk
+        environment: ${OPSDESK_ENV:local}
+    json:
+      # Micrometer puts traceId/spanId into the MDC; ECS names them trace.id/span.id (Kibana/APM correlation).
+      rename:
+        traceId: trace.id
+        spanId: span.id
 
 ---
 # Demo data for local runs, tests and the showcase; never active in a real stage.
@@ -37,3 +70,26 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/opsdesk}
     username: ${SPRING_DATASOURCE_USERNAME:opsdesk}
+
+---
+# MOCK: no Datadog account exists. Shows how metrics would be pushed to Datadog: the API key comes only from the
+# environment (DATADOG_API_KEY, never a default); DatadogKeyCheck stops the start when it is missing.
+spring:
+  config:
+    activate:
+      on-profile: datadog
+management:
+  datadog:
+    metrics:
+      export:
+        enabled: true
+        api-key: ${DATADOG_API_KEY}
+        uri: ${DATADOG_SITE_URI:https://api.datadoghq.eu}
+        step: 30s
+  # The registry posts straight to the Datadog API (no agent in between), so Unified Service Tagging must be set
+  # as metric tags here; the Helm chart fills DD_SERVICE/DD_ENV/DD_VERSION.
+  metrics:
+    tags:
+      service: ${DD_SERVICE:opsdesk}
+      env: ${DD_ENV:local}
+      version: ${DD_VERSION:unknown}
