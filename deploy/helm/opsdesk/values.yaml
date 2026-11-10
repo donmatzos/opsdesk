@@ -87,4 +87,9 @@ datadog:
   # Existing Secret with key "api-key" (required when enabled); created outside the chart.
   apiKeySecret: ""
 
+# MCP server at /mcp (bearer token). Empty = no token, the endpoint answers 503 (disabled).
+mcp:
+  # Existing Secret with key "token" (created outside the chart, never in values); sets OPSDESK_MCP_TOKEN.
+  tokenSecret: ""
+
 podAnnotations: {}

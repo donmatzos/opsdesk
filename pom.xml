@@ -30,6 +30,7 @@
         <node.version>v24.22.2</node.version>
         <skipTests>false</skipTests>
         <jacoco.version>0.8.16</jacoco.version>
+        <spring-ai.version>2.0.2</spring-ai.version>
         <sonar-maven-plugin.version>5.8.0.7211</sonar-maven-plugin.version>
 
         <!-- SonarCloud (analysis runs in CI with the SONAR_TOKEN secret; nothing secret here) -->
@@ -40,6 +41,13 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>at.donmatzos.opsdesk</groupId>
                 <artifactId>frontend</artifactId>

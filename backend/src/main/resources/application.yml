@@ -13,6 +13,23 @@ spring:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
+  ai:
+    mcp:
+      server:
+        name: opsdesk
+        version: "@project.version@"
+        # Stateless: no session state in the pod, so any replica can answer any request (no sticky routing).
+        protocol: STATELESS
+        streamable-http:
+          mcp-endpoint: /mcp
+        instructions: >-
+          opsdesk is a service-status and incident desk. Use the tools to look up monitored services
+          and their health, and to read or work on incidents. Tools return compact JSON.
+
+opsdesk:
+  mcp:
+    # Bearer token for /mcp from the environment. Empty = MCP disabled (503); the rest of the app is unaffected.
+    token: ${OPSDESK_MCP_TOKEN:}
 
 server:
   shutdown: graceful

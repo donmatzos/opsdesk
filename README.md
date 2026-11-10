@@ -8,4 +8,18 @@ A minimal service-status and incident desk: Spring Boot (Java 25) backend, Angul
 
 Cloud parts (Azure OpenAI / AI Search, OpenShift, Datadog, Artifactory) are mocked or disabled, because the project runs without a cloud account. They are written the way they would be used, and each one is marked.
 
+## Use it from Claude Code
+The backend serves an MCP server at `/mcp` (6 tools: services, incidents, open/change incident). It needs a bearer token, so generate one and start the stack:
+
+```bash
+cp deploy/compose/.env.example deploy/compose/.env
+# edit deploy/compose/.env: set the DB password, and paste the output of `openssl rand -hex 32` after OPSDESK_MCP_TOKEN=
+docker compose -f deploy/compose/compose.yml --profile app up -d --build --wait
+set -a; . deploy/compose/.env; set +a
+tools/mcp-verify.sh      # MCP Inspector check, prints MCP VERIFY PASS
+claude                   # the repo's .mcp.json registers the server "opsdesk"; ask "which services are degraded?"
+```
+
+Details (tools, auth, Claude Desktop notes): `docs/context/mcp.md`.
+
 <!-- TODO: architecture diagram, quick start, "what this shows" table (from docs/context/skills-matrix.md) -->

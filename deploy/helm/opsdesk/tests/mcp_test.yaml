@@ -1,0 +1,24 @@
+suite: mcp token
+templates:
+  - deployment.yaml
+release:
+  name: opsdesk
+set:
+  database.existingSecret: opsdesk-db
+  database.url: jdbc:postgresql://db:5432/opsdesk
+tests:
+  - it: leaves MCP disabled (no token env) by default
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].env[?(@.name == "OPSDESK_MCP_TOKEN")]
+
+  - it: takes the token from the named Secret (key token)
+    set:
+      mcp.tokenSecret: opsdesk-mcp
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OPSDESK_MCP_TOKEN
+            valueFrom:
+              secretKeyRef: { name: opsdesk-mcp, key: token }

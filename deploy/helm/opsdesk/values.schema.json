@@ -204,6 +204,15 @@
           "type": "string"
         }
       }
+    },
+    "mcp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tokenSecret": {
+          "type": "string"
+        }
+      }
     }
   }
 }
