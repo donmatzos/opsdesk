@@ -11,4 +11,4 @@ Phase 4 merged (PR #8): incident metrics (`/actuator/prometheus`, after-commit),
 
 ## Next up
 1. Phase 5 `feature/mcp-server`: plan `docs/plans/2026-11-10-phase-5-mcp-server.md` (owner review pending).
-2. Phase 7 starts with a UI/UX analysis (owner request, in the roadmap).
+2. Plans for phases 6 to 8 are written (`docs/plans/2026-11-10-phase-{6,7,8}-*.md`, owner review pending); phase 7 starts with a UI/UX analysis.
