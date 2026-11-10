@@ -44,7 +44,12 @@ args_for() {
   if [[ $1 == default ]]; then printf '%s\n' "${default_db[@]}"; else printf '%s\n' -f "${chart}/$1"; fi
 }
 
-unittest() { docker run --rm -v "${root}:/apps" -w /apps "${unittest_image}" --strict "${chart}"; }
+# helm-unittest always creates tests/__snapshot__; its image runs as UID 1000, so run it as the owner of the
+# checkout instead (on GitHub runners that is UID 1001, and the mkdir failed with "permission denied").
+unittest() {
+  docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e XDG_CACHE_HOME=/tmp/.cache \
+    -v "${root}:/apps" -w /apps "${unittest_image}" --strict "${chart}"
+}
 conform() {
   helm template opsdesk "${chart}" "$@" \
     | docker run --rm -i "${kubeconform_image}" -strict -summary \
