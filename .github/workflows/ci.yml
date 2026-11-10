@@ -1,5 +1,7 @@
-# CI/CD: build + tests + Sonar (reusable workflow), secret scan, Trivy (repo and image), container smoke test,
-# image publish to GHCR from main when the repository variable PUBLISH_IMAGE is 'true'.
+# CI/CD. Push (any branch) and pull request run only `verify`: build + tests + Sonar (reusable workflow).
+# The full pipeline (context check, secret scan, Trivy repo + image, Terraform, Helm, container smoke test,
+# GHCR publish, OpenShift deploy) runs only for pushes to main, i.e. merges. Jobs skipped on branches and
+# PRs count as passed for required status checks.
 name: ci
 
 on:
@@ -18,9 +20,6 @@ concurrency:
 
 env:
   IMAGE: ghcr.io/${{ github.repository }}
-  # SARIF upload: PRs from this repo (not forks/Dependabot: no security-events: write) and main. Feature-branch push
-  # runs skip it: the PR run uploads the same commit, and a branch deleted after merge makes the upload fail.
-  CAN_UPLOAD_SARIF: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 jobs:
   verify:
@@ -34,6 +33,7 @@ jobs:
 
   context-check:
     name: Context size check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -42,6 +42,7 @@ jobs:
 
   secrets:
     name: Secret scan (gitleaks, full history)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -55,6 +56,7 @@ jobs:
 
   trivy-fs:
     name: Trivy repository scan
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -74,7 +76,6 @@ jobs:
           output: trivy-fs.sarif
           exit-code: "0"
       - name: Upload to code scanning
-        if: env.CAN_UPLOAD_SARIF == 'true'
         uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: trivy-fs.sarif
@@ -92,6 +93,7 @@ jobs:
 
   terraform:
     name: Terraform (fmt, validate, tflint)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     # MOCK: Datadog monitors/dashboard are validated only; plan/apply never run (no account).
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -113,6 +115,7 @@ jobs:
 
   helm:
     name: Helm chart (lint, unit tests, schema)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -123,6 +126,7 @@ jobs:
   image:
     name: Image (build, scan, smoke test)
     needs: [verify, trivy-fs, helm]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -163,7 +167,6 @@ jobs:
           output: trivy-image.sarif
           exit-code: "0"
       - name: Upload to code scanning
-        if: env.CAN_UPLOAD_SARIF == 'true'
         uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: trivy-image.sarif
