@@ -17,13 +17,16 @@ spring:
 server:
   shutdown: graceful
 
-# Kubernetes probes (/actuator/health/liveness, /readiness). Explicit, so they also exist outside a cluster
-# (tests, smoke test) and do not depend on a default.
+# Actuator on its own port: never routed to the outside (Route/Ingress go to 8080 only); Prometheus scrapes 9090.
+# Probes are additionally served on the app port as /livez and /readyz, so Kubernetes and smoke tests use 8080.
 management:
+  server:
+    port: 9090
   endpoint:
     health:
       probes:
         enabled: true
+        add-additional-paths: true
   endpoints:
     web:
       exposure:
@@ -83,3 +86,10 @@ management:
         api-key: ${DATADOG_API_KEY}
         uri: ${DATADOG_SITE_URI:https://api.datadoghq.eu}
         step: 30s
+  # The registry posts straight to the Datadog API (no agent in between), so Unified Service Tagging must be set
+  # as metric tags here; the Helm chart fills DD_SERVICE/DD_ENV/DD_VERSION.
+  metrics:
+    tags:
+      service: ${DD_SERVICE:opsdesk}
+      env: ${DD_ENV:local}
+      version: ${DD_VERSION:unknown}

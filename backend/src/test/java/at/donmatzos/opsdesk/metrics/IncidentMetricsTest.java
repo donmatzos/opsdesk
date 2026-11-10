@@ -3,7 +3,8 @@ package at.donmatzos.opsdesk.metrics;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.testng.Assert.assertTrue;
 
 import at.donmatzos.opsdesk.incident.IncidentOpened;
 import at.donmatzos.opsdesk.incident.IncidentRepository;
@@ -45,7 +46,7 @@ public class IncidentMetricsTest {
     @Test
     public void shouldRecordTimeToResolveOnlyWhenResolved() {
         metrics.on(change(IncidentState.OPEN, IncidentState.MITIGATED, 30));
-        assertNull(registry.find("opsdesk.incidents.time.to.resolve").timer());
+        assertEquals(registry.get("opsdesk.incidents.time.to.resolve").tag("severity", "SEV2").timer().count(), 0L);
 
         metrics.on(change(IncidentState.MITIGATED, IncidentState.RESOLVED, 90));
         var timer = registry.get("opsdesk.incidents.time.to.resolve").tag("severity", "SEV2").timer();
@@ -54,12 +55,51 @@ public class IncidentMetricsTest {
     }
 
     @Test
-    public void shouldReadActiveIncidentsFromTheRepository() {
+    public void shouldReadActiveIncidentsFromTheRepositoryOnRefresh() {
         when(incidents.countByState(IncidentState.OPEN)).thenReturn(3L);
         when(incidents.countByState(IncidentState.MITIGATED)).thenReturn(1L);
 
+        metrics.refreshActiveIncidents();
+
         assertEquals(registry.get("opsdesk.incidents.active").tag("state", "OPEN").gauge().value(), 3.0);
         assertEquals(registry.get("opsdesk.incidents.active").tag("state", "MITIGATED").gauge().value(), 1.0);
+    }
+
+    // A scrape never queries the database; it reads the last refreshed value.
+    @Test
+    public void shouldNotQueryTheDatabaseOnScrape() {
+        registry.get("opsdesk.incidents.active").tag("state", "OPEN").gauge().value();
+        verifyNoInteractions(incidents);
+    }
+
+    @Test
+    public void shouldReportNaNWhenTheDatabaseIsUnavailable() {
+        when(incidents.countByState(IncidentState.OPEN)).thenReturn(3L);
+        metrics.refreshActiveIncidents();
+        when(incidents.countByState(IncidentState.OPEN)).thenThrow(new IllegalStateException("db down"));
+
+        metrics.refreshActiveIncidents();
+
+        assertTrue(Double.isNaN(registry.get("opsdesk.incidents.active").tag("state", "OPEN").gauge().value()));
+    }
+
+    // Pre-registered: the first increment is visible to rate()/increase(), Datadog sees 0 instead of no data.
+    @Test
+    public void shouldRegisterCountersAndTimersForEverySeverityUpFront() {
+        for (Severity severity : Severity.values()) {
+            assertEquals(registry.get("opsdesk.incidents.opened").tag("severity", severity.name()).counter().count(), 0.0);
+            assertEquals(registry.get("opsdesk.incidents.time.to.resolve").tag("severity", severity.name()).timer().count(), 0L);
+        }
+    }
+
+    // Resolve times are minutes to days: SLO buckets instead of the default 1 ms - 30 s histogram.
+    @Test
+    public void shouldBucketTimeToResolveBySlo() {
+        var buckets = registry.get("opsdesk.incidents.time.to.resolve").tag("severity", "SEV1").timer()
+                .takeSnapshot().histogramCounts();
+        assertEquals(buckets.length, 5);
+        assertEquals(buckets[0].bucket(TimeUnit.MINUTES), 15.0);
+        assertEquals(buckets[4].bucket(TimeUnit.DAYS), 7.0);
     }
 
     private static IncidentStateChanged change(IncidentState from, IncidentState to, long minutes) {

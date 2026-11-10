@@ -34,5 +34,5 @@ ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError" \
     LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs
 # Docker/compose only; Kubernetes uses the probes from the Helm chart.
 HEALTHCHECK --interval=15s --timeout=3s --start-period=60s --retries=3 \
-    CMD curl -fs http://localhost:8080/actuator/health || exit 1
+    CMD curl -fs http://localhost:8080/readyz || exit 1
 ENTRYPOINT ["java", "-jar", "opsdesk.jar"]

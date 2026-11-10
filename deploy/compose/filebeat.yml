@@ -1,5 +1,5 @@
 # Filebeat for the local Elastic stack: read Docker's JSON log files, decode the app's ECS JSON lines and keep
-# only opsdesk's events (service.name). Index opsdesk-logs-YYYY.MM.DD; Kibana data view opsdesk-logs-*.
+# only opsdesk's events (service.name). Data stream opsdesk-logs; Kibana data view opsdesk-logs.
 filebeat.inputs:
   - type: filestream
     id: docker-containers
@@ -7,6 +7,8 @@ filebeat.inputs:
       - /var/lib/docker/containers/*/*.log
     parsers:
       - container: ~
+    # Skip old files of other projects on the first start (lines of other services are dropped below anyway).
+    ignore_older: 24h
 
 processors:
   # The app's line is ECS JSON inside the Docker log record: lift its fields to the top level.
@@ -23,10 +25,11 @@ processors:
           equals:
             service.name: opsdesk
 
+# One data stream (Beats 8+ templates are data-stream templates); it rolls over by itself instead of one per day.
 output.elasticsearch:
   hosts: ["http://elasticsearch:9200"]
-  index: "opsdesk-logs-%{+yyyy.MM.dd}"
+  index: opsdesk-logs
 
 setup.ilm.enabled: false
 setup.template.name: opsdesk-logs
-setup.template.pattern: "opsdesk-logs-*"
+setup.template.pattern: "opsdesk-logs*"

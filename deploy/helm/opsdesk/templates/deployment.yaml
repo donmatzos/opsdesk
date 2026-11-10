@@ -25,15 +25,17 @@ spec:
       labels:
         {{- include "opsdesk.appSelectorLabels" . | nindent 8 }}
         {{- include "opsdesk.datadogLabels" . | nindent 8 }}
-      {{- if or .Values.podAnnotations .Values.datadog.enabled }}
       annotations:
+        # Actuator has its own port (9090), never routed; scrape it from inside the cluster.
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: /actuator/prometheus
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
         {{- if .Values.datadog.enabled }}
         ad.datadoghq.com/opsdesk.logs: '[{"source":"java","service":"opsdesk"}]'
         {{- end }}
-      {{- end }}
     spec:
       serviceAccountName: {{ include "opsdesk.fullname" . }}
       automountServiceAccountToken: false
@@ -69,6 +71,9 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
           env:
             - name: SPRING_DATASOURCE_URL
               value: {{ include "opsdesk.dbUrl" . | quote }}
@@ -84,7 +89,8 @@ spec:
               value: {{ . | quote }}
             {{- end }}
             {{- if .Values.datadog.enabled }}
-            # MOCK: Datadog (no account). Key from an existing Secret; agent on the node for traces/DogStatsD.
+            # MOCK: Datadog (no account). The app posts metrics to the Datadog API with this key and turns
+            # DD_SERVICE/DD_ENV/DD_VERSION into metric tags (Unified Service Tagging).
             - name: DATADOG_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -96,10 +102,6 @@ spec:
               value: {{ include "opsdesk.name" . | quote }}
             - name: DD_VERSION
               value: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
-            - name: DD_AGENT_HOST
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
             {{- end }}
           lifecycle:
             # Endpoints and the router still send traffic briefly after SIGTERM: drain first, then shut down
@@ -109,19 +111,19 @@ spec:
                 seconds: 5
           startupProbe:
             httpGet:
-              path: /actuator/health/liveness
+              path: /livez
               port: http
             periodSeconds: 5
             failureThreshold: 36
           livenessProbe:
             httpGet:
-              path: /actuator/health/liveness
+              path: /livez
               port: http
             periodSeconds: 10
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /actuator/health/readiness
+              path: /readyz
               port: http
             periodSeconds: 5
             failureThreshold: 3

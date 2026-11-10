@@ -48,6 +48,17 @@ public class ApplicationConfigTest {
         assertEquals(String.valueOf(datadog.getProperty("management.datadog.metrics.export.enabled")), "true");
     }
 
+    // The registry posts straight to the Datadog API (no agent enrichment): service/env/version must be tags.
+    @Test
+    public void shouldTagDatadogMetricsWithUnifiedServiceTags() throws IOException {
+        PropertySource<?> datadog = load().stream()
+                .filter(d -> "datadog".equals(d.getProperty("spring.config.activate.on-profile")))
+                .findFirst().orElseThrow();
+        assertEquals(String.valueOf(datadog.getProperty("management.metrics.tags.service")), "${DD_SERVICE:opsdesk}");
+        assertEquals(String.valueOf(datadog.getProperty("management.metrics.tags.env")), "${DD_ENV:local}");
+        assertEquals(String.valueOf(datadog.getProperty("management.metrics.tags.version")), "${DD_VERSION:unknown}");
+    }
+
     private static List<PropertySource<?>> load() throws IOException {
         return new YamlPropertySourceLoader().load("application", new ClassPathResource("application.yml"));
     }

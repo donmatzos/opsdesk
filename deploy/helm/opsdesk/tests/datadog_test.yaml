@@ -15,7 +15,7 @@ tests:
       - notExists:
           path: spec.template.metadata.labels["tags.datadoghq.com/service"]
 
-  - it: adds Unified Service Tagging, the agent host and the key from a Secret when enabled
+  - it: adds Unified Service Tagging and the key from a Secret when enabled
     set:
       datadog.enabled: true
       datadog.env: dev
@@ -34,7 +34,11 @@ tests:
       - equal:
           path: metadata.labels["tags.datadoghq.com/service"]
           value: opsdesk
+      # The app posts metrics to the Datadog API itself and turns DD_SERVICE/DD_ENV/DD_VERSION into tags.
       - contains:
+          path: spec.template.spec.containers[0].env
+          content: { name: DD_SERVICE, value: opsdesk }
+      - notContains:
           path: spec.template.spec.containers[0].env
           content:
             name: DD_AGENT_HOST

@@ -1,4 +1,5 @@
-# Metrics come from the app's Micrometer Datadog registry (profile "datadog"); timers arrive in milliseconds.
+# Metrics come from the app's Micrometer Datadog registry (profile "datadog"); timers arrive in milliseconds,
+# tagged service/env/version by the app itself (it posts to the API directly, no agent enrichment).
 
 resource "datadog_monitor" "sev1_opened" {
   name    = "[${var.env}] ${var.service}: SEV1 incident opened"
@@ -20,9 +21,10 @@ resource "datadog_monitor" "sev1_opened" {
 }
 
 resource "datadog_monitor" "slow_resolution" {
-  name    = "[${var.env}] ${var.service}: incidents take too long to resolve"
-  type    = "query alert"
-  query   = "avg(last_1d):avg:opsdesk.incidents.time.to.resolve.avg{${local.scope}} > 14400000"
+  name = "[${var.env}] ${var.service}: incidents take too long to resolve"
+  type = "query alert"
+  # Real mean over the window: sum / count. (Averaging the per-step .avg would mostly average zeros.)
+  query   = "sum(last_1d):sum:opsdesk.incidents.time.to.resolve.sum{${local.scope}}.as_count() / sum:opsdesk.incidents.time.to.resolve.count{${local.scope}}.as_count() > 14400000"
   message = <<-EOT
     Mean time to resolve is above 4 h over the last day in ${var.service} (${var.env}).
     Runbook: ${var.runbook_base_url}/postmortem-template.md

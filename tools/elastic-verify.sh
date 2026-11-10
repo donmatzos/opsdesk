@@ -34,7 +34,7 @@ hits=""
 until [[ -n ${hits} ]]; do
   (( SECONDS < deadline )) || fail "no log lines for incident ${id} after 120 s"
   sleep 3
-  hits=$(curl -fsS "${es}/opsdesk-logs-*/_search?q=incident.id:${id}&size=10" 2>/dev/null \
+  hits=$(curl -fsS "${es}/opsdesk-logs/_search?q=incident.id:${id}&size=10" 2>/dev/null \
     | python3 -c '
 import json, sys
 docs = [h["_source"] for h in json.load(sys.stdin)["hits"]["hits"]]
@@ -52,11 +52,14 @@ for d in docs:
 assert len({d['trace']['id'] for d in docs}) == len(docs), "two requests must have two traces"
 PY
 
-echo "== Kibana data view opsdesk-logs-*"
-if ! curl -fsS "${kibana}/api/data_views" | grep -q '"title":"opsdesk-logs-\*"'; then
+curl -fsS "${es}/_data_stream/opsdesk-logs" | grep -q '"name":"opsdesk-logs"' || fail "opsdesk-logs is not a data stream"
+echo "ok  logs land in the data stream opsdesk-logs"
+
+echo "== Kibana data view opsdesk-logs"
+if ! curl -fsS "${kibana}/api/data_views" | grep -q '"title":"opsdesk-logs"'; then
   curl -fsS -o /dev/null -X POST "${kibana}/api/data_views/data_view" -H 'kbn-xsrf: true' \
     -H 'Content-Type: application/json' \
-    -d '{"data_view":{"title":"opsdesk-logs-*","name":"opsdesk logs","timeFieldName":"@timestamp"}}'
+    -d '{"data_view":{"title":"opsdesk-logs","name":"opsdesk logs","timeFieldName":"@timestamp"}}'
 fi
 echo "ok  data view ready: ${kibana}/app/discover (search e.g. trace.id : \"<id>\" or incident.id : ${id})"
 echo "ELASTIC VERIFY PASS"

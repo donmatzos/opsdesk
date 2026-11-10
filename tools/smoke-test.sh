@@ -8,15 +8,15 @@ timeout=${2:-60}
 
 fail() { echo "SMOKE FAIL: $*" >&2; exit 1; }
 
-echo "Waiting up to ${timeout}s for ${base_url}/actuator/health ..."
+echo "Waiting up to ${timeout}s for ${base_url}/livez ..."
 deadline=$((SECONDS + timeout))
-until [[ $(curl -fsS --max-time 5 "${base_url}/actuator/health" 2>/dev/null) == *'"status":"UP"'* ]]; do
+until [[ $(curl -fsS --max-time 5 "${base_url}/livez" 2>/dev/null) == *'"status":"UP"'* ]]; do
   (( SECONDS < deadline )) || fail "health not UP after ${timeout} s"
   sleep 2
 done
-echo "ok  health UP"
+echo "ok  liveness UP"
 
-readiness=$(curl -fsS --max-time 5 "${base_url}/actuator/health/readiness") || fail "GET /actuator/health/readiness failed"
+readiness=$(curl -fsS --max-time 5 "${base_url}/readyz") || fail "GET /readyz failed"
 [[ $readiness == *'"status":"UP"'* ]] || fail "readiness probe not UP: ${readiness:0:200}"
 echo "ok  readiness probe UP"
 

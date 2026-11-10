@@ -44,7 +44,7 @@ public class MetricsEndpointTest extends IntegrationTest {
         client().patch().uri("/api/incidents/{id}", created.id()).contentType(MediaType.APPLICATION_JSON)
                 .body(Map.of("state", "RESOLVED")).exchange().expectStatus().isOk();
 
-        String body = client().get().uri("/actuator/prometheus").exchange()
+        String body = management().get().uri("/actuator/prometheus").exchange()
                 .expectStatus().isOk().expectBody(String.class).returnResult().getResponseBody();
 
         assertTrue(body.contains("opsdesk_incidents_opened_total{application=\"opsdesk\",severity=\"SEV2\"}"), body);
@@ -54,8 +54,8 @@ public class MetricsEndpointTest extends IntegrationTest {
 
     @Test
     public void shouldExposeOnlyHealthInfoAndPrometheus() {
-        client().get().uri("/actuator/env").exchange().expectStatus().isNotFound();
-        client().get().uri("/actuator/beans").exchange().expectStatus().isNotFound();
+        management().get().uri("/actuator/env").exchange().expectStatus().isNotFound();
+        management().get().uri("/actuator/beans").exchange().expectStatus().isNotFound();
     }
 
     // Review Focus 1: metrics count committed changes only.

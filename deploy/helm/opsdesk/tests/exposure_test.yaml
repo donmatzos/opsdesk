@@ -11,6 +11,14 @@ tests:
       - contains:
           path: spec.ports
           content: { name: http, port: 8080, targetPort: http, protocol: TCP }
+      - contains:
+          path: spec.ports
+          content: { name: metrics, port: 9090, targetPort: metrics, protocol: TCP }
+
+  - it: routes only the app port, never the management port
+    template: route.yaml
+    asserts:
+      - equal: { path: spec.port.targetPort, value: http }
 
   - it: can expose the app as a NodePort (local clusters)
     template: service.yaml

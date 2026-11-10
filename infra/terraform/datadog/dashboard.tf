@@ -27,7 +27,7 @@ resource "datadog_dashboard" "opsdesk" {
     timeseries_definition {
       title = "Mean time to resolve (ms)"
       request {
-        q            = "avg:opsdesk.incidents.time.to.resolve.avg{${local.scope}} by {severity}"
+        q            = "sum:opsdesk.incidents.time.to.resolve.sum{${local.scope}} by {severity}.as_count() / sum:opsdesk.incidents.time.to.resolve.count{${local.scope}} by {severity}.as_count()"
         display_type = "line"
       }
     }
