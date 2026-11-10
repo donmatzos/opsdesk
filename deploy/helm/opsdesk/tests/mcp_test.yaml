@@ -9,12 +9,8 @@ set:
 tests:
   - it: leaves MCP disabled (no token env) by default
     asserts:
-      - notContains:
-          path: spec.template.spec.containers[0].env
-          content:
-            name: OPSDESK_MCP_TOKEN
-            valueFrom:
-              secretKeyRef: { name: opsdesk-mcp, key: token }
+      - notExists:
+          path: spec.template.spec.containers[0].env[?(@.name == "OPSDESK_MCP_TOKEN")]
 
   - it: takes the token from the named Secret (key token)
     set:
