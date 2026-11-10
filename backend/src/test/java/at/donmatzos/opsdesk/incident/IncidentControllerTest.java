@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -65,6 +66,27 @@ public class IncidentControllerTest extends AbstractTestNGSpringContextTests {
                 .content("{\"state\":\"OPEN\"}").exchange())
                 .hasStatus(409).hasContentType(PROBLEM_JSON)
                 .bodyJson().extractingPath("$.detail").isEqualTo("Cannot change incident state from RESOLVED to OPEN");
+    }
+
+    @Test
+    public void shouldReturn409WhenIncidentWasChangedConcurrently() {
+        when(service.changeState(eq(7L), eq(IncidentState.RESOLVED)))
+                .thenThrow(new OptimisticLockingFailureException("stale"));
+
+        assertThat(mvc.patch().uri("/api/incidents/7").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"state\":\"RESOLVED\"}").exchange())
+                .hasStatus(409).hasContentType(PROBLEM_JSON)
+                .bodyJson().extractingPath("$.detail")
+                .isEqualTo("The incident was changed by someone else; reload and try again");
+    }
+
+    @Test
+    public void shouldReturnGeneric500ProblemWithoutInternalDetails() {
+        when(service.list(any())).thenThrow(new IllegalStateException("connection to db-secret-host failed"));
+
+        MvcTestResult result = mvc.get().uri("/api/incidents").exchange();
+        assertThat(result).hasStatus(500).hasContentType(PROBLEM_JSON);
+        assertThat(result).bodyText().doesNotContain("db-secret-host");
     }
 
     @Test

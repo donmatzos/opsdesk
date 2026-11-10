@@ -59,7 +59,7 @@ public class IncidentServiceTest {
 
     @Test
     public void shouldResolveWithCurrentTime() {
-        Incident open = new Incident(5L, 1L, Severity.SEV2, IncidentState.OPEN, "x", NOW.minusSeconds(60), null);
+        Incident open = new Incident(5L, 1L, Severity.SEV2, IncidentState.OPEN, "x", NOW.minusSeconds(60), null, 0L);
         when(incidents.findById(5L)).thenReturn(Optional.of(open));
 
         assertEquals(service.changeState(5L, IncidentState.RESOLVED).resolvedAt(), NOW);

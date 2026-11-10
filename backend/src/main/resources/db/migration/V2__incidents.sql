@@ -5,7 +5,8 @@ create table incidents (
     state       varchar(10)  not null check (state in ('OPEN', 'MITIGATED', 'RESOLVED')),
     summary     varchar(200) not null,
     opened_at   timestamptz  not null,
-    resolved_at timestamptz
+    resolved_at timestamptz,
+    version     bigint       not null default 0
 );
 
 create index incidents_state_idx on incidents (state);

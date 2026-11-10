@@ -5,6 +5,7 @@ import at.donmatzos.opsdesk.incident.UnknownServiceException;
 import java.util.Map;
 import java.util.TreeMap;
 import org.jspecify.annotations.Nullable;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -36,6 +37,19 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(UnknownServiceException.class)
     ProblemDetail unprocessable(UnknownServiceException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_CONTENT, e.getMessage());
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    ProblemDetail concurrentUpdate() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+                "The incident was changed by someone else; reload and try again");
+    }
+
+    /** Last resort: log the cause, but never send internals (hosts, SQL, stack traces) to the client. */
+    @ExceptionHandler(Exception.class)
+    ProblemDetail unexpected(Exception e) {
+        logger.error("Unhandled exception", e);
+        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error");
     }
 
     @Override
