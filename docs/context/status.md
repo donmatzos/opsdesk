@@ -9,6 +9,8 @@ Phase 3 merged (PR #7): probes + graceful shutdown; Helm chart (restricted SCC, 
 
 Phase 4 merged (PR #8): incident metrics (`/actuator/prometheus`, after-commit), ECS JSON logs with trace ids, local Elastic stack (`tools/elastic-verify.sh`, passed), Datadog mock (profile + key check, chart tagging), Terraform monitors/dashboard (CI job `terraform`), Dependabot: terraform, docker-compose, TypeScript majors ignored.
 
+Phase 5 done on `feature/mcp-server`, awaiting merge: MCP server in the backend (`/mcp`, stateless Streamable HTTP, bearer token `OPSDESK_MCP_TOKEN`, 503 when unset, 401 when wrong), 6 tools, Helm `mcp.tokenSecret`, root `.mcp.json`, `tools/mcp-verify.sh` (passed locally). The `mcp/` module is gone: MCP lives in the backend. Details: `docs/context/mcp.md`.
+
 ## Next up
-1. Phase 5 `feature/mcp-server`: plan `docs/plans/2026-11-10-phase-5-mcp-server.md` (owner review pending).
+1. Merge phase 5 (owner), then phase 6 `feature/runbook-rag`.
 2. Plans for phases 6 to 8 are written (`docs/plans/2026-11-10-phase-{6,7,8}-*.md`, owner review pending); phase 7 starts with a UI/UX analysis.

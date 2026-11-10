@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "opsdesk": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp",
+      "headers": {
+        "Authorization": "Bearer ${OPSDESK_MCP_TOKEN}"
+      }
+    }
+  }
+}

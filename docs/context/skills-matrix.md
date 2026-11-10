@@ -32,7 +32,7 @@ Source: owner's resume (2026-11). Direction: DevOps with a software engineering 
 ## AI / LLM (the differentiator)
 | Skill | Pri | Where it shows |
 |---|---|---|
-| MCP server development | A | `mcp` module: tools over the domain (list services, open incidents, search runbooks), real and runnable locally |
+| MCP server development | A | done (phase 5): MCP server in the backend (`/mcp`, bearer token, 6 tools over services and incidents; `search_runbooks` in phase 6), `.mcp.json` for Claude Code, `tools/mcp-verify.sh` |
 | RAG | B | `ai` module: retrieval over `docs/runbooks/` with an in-memory index (real), answer composing behind an `LlmClient` interface |
 | Azure OpenAI, Azure AI Search | C | `ai` adapters behind interfaces, Spring profile `azure`, disabled; Terraform for the resources |
 | Agentic engineering, context engineering | A | this context system (`CLAUDE.md` router, small files, size check), `AGENTS.md` for Copilot/other agents, `.claude/skills/`, optional `apm.yml` |
