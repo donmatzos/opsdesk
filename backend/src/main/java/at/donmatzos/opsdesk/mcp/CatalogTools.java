@@ -34,8 +34,8 @@ class CatalogTools {
             @McpToolParam(required = false, description = """
                     Only return services in this stage. Valid values: DEV, PROD. Omit to return all stages.""")
             Stage stage) {
-        return services.findAllByOrderByNameAsc().stream()
-                .filter(s -> stage == null || s.stage() == stage)
+        var found = stage == null ? services.findAllByOrderByNameAsc() : services.findByStageOrderByNameAsc(stage);
+        return found.stream()
                 .map(s -> new ServiceSummary(s.id(), s.name(), s.ownerTeam(), s.stage(), s.status()))
                 .toList();
     }
