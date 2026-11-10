@@ -269,10 +269,12 @@ jobs:
           URL: ${{ steps.route.outputs.url }}
         run: |
           if ! tools/smoke-test.sh "${URL}" 180; then
-            if (( $(helm history "${RELEASE}" -n "${NAMESPACE}" -o json | jq length) > 1 )); then
-              helm rollback "${RELEASE}" -n "${NAMESPACE}" --wait
-            else
+            # Roll back unless this is provably the first release (an unknown history still tries the rollback).
+            revisions=$(helm history "${RELEASE}" -n "${NAMESPACE}" -o json | jq length) || revisions=unknown
+            if [[ ${revisions} == 1 ]]; then
               echo "First release: nothing to roll back to."
+            else
+              helm rollback "${RELEASE}" -n "${NAMESPACE}" --wait
             fi
             exit 1
           fi

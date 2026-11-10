@@ -1,4 +1,8 @@
 {{- if .Values.networkPolicy.enabled }}
+{{- $labels := .Values.networkPolicy.ingressNamespaceLabels }}
+{{- if and .Values.ingress.enabled (empty $labels) }}
+{{- fail "networkPolicy.ingressNamespaceLabels must select your ingress controller's namespace when ingress.enabled (e.g. kubernetes.io/metadata.name: ingress-nginx), or set networkPolicy.enabled=false" }}
+{{- end }}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -15,7 +19,7 @@ spec:
         # The ingress router (OpenShift: openshift-ingress namespace) ...
         - namespaceSelector:
             matchLabels:
-              {{- toYaml .Values.networkPolicy.ingressNamespaceLabels | nindent 14 }}
+              {{- toYaml ($labels | default (dict "policy-group.network.openshift.io/ingress" "")) | nindent 14 }}
         # ... and pods in the same namespace (e.g. a debug pod or the smoke test).
         - podSelector: {}
       ports:

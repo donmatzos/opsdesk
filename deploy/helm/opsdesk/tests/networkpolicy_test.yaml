@@ -27,3 +27,53 @@ tests:
       networkPolicy.enabled: false
     asserts:
       - hasDocuments: { count: 0 }
+
+  # Plain Kubernetes: the default selector is the OpenShift router namespace; an ingress controller elsewhere
+  # would be blocked silently (502/504). Rendering must ask for the right namespace instead.
+  - it: refuses Ingress mode while the policy still selects only the OpenShift router
+    set:
+      route.enabled: false
+      ingress.enabled: true
+      ingress.host: opsdesk.example.test
+    asserts:
+      - failedTemplate:
+          errorMessage: "networkPolicy.ingressNamespaceLabels must select your ingress controller's namespace when ingress.enabled (e.g. kubernetes.io/metadata.name: ingress-nginx), or set networkPolicy.enabled=false"
+
+  - it: admits the ingress controller namespace that is configured
+    set:
+      route.enabled: false
+      ingress.enabled: true
+      ingress.host: opsdesk.example.test
+      networkPolicy.ingressNamespaceLabels:
+        kubernetes.io/metadata.name: ingress-nginx
+    asserts:
+      - equal:
+          path: spec.ingress[0].from[0]
+          value:
+            namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ingress-nginx
+      - contains:
+          path: spec.ingress[0].from
+          content:
+            namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ingress-nginx
+
+  # An empty matchLabels would admit every namespace; empty means "OpenShift router" instead.
+  - it: never renders an empty namespace selector
+    set:
+      networkPolicy.ingressNamespaceLabels: {}
+    asserts:
+      - notContains:
+          path: spec.ingress[0].from
+          content:
+            namespaceSelector:
+              matchLabels: {}
+      - contains:
+          path: spec.ingress[0].from
+          content:
+            namespaceSelector:
+              matchLabels:
+                policy-group.network.openshift.io/ingress: ""
+

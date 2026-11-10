@@ -1,0 +1,11 @@
+# Deliberate settings, checked with Trivy and kept on purpose (one reason per finding).
+
+# OpenShift's restricted-v2 SCC assigns a random UID/GID per namespace; pinning runAsUser/runAsGroup breaks it.
+KSV-0020
+KSV-0021
+# No CPU limit on purpose: limits cause CFS throttling of the JVM; CPU requests are set for scheduling.
+KSV-0011
+# The chart is namespace-agnostic; the namespace comes from helm --namespace, never "default" in a stage.
+KSV-0110
+# ghcr.io (this repo's own registry) and quay.io/sclorg (Red Hat) are the intended registries.
+KSV-0125

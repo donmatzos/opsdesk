@@ -105,3 +105,16 @@ tests:
     asserts:
       - failedTemplate:
           errorMessage: database.existingSecret is required when devDatabase.enabled is false
+
+  # Endpoints and the router keep sending traffic for a moment after SIGTERM; drain first, then shut down.
+  - it: waits before shutdown so in-flight routing can drain
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].lifecycle.preStop.sleep.seconds
+          value: 5
+
+  - it: has no init container without the dev database
+    asserts:
+      - notExists:
+          path: spec.template.spec.initContainers
+

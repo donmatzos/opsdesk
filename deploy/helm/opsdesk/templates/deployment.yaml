@@ -36,6 +36,24 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       terminationGracePeriodSeconds: 30
+      {{- if .Values.devDatabase.enabled }}
+      initContainers:
+        # Start the app only when the dev database accepts connections (avoids CrashLoop backoff on first install).
+        - name: wait-for-db
+          image: {{ .Values.devDatabase.image }}
+          command:
+            - /bin/sh
+            - -c
+            - until pg_isready -h {{ include "opsdesk.fullname" . }}-db -p 5432 -t 2; do echo waiting for database; sleep 2; done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          securityContext:
+            {{- include "opsdesk.containerSecurityContext" . | nindent 12 }}
+      {{- end }}
       containers:
         - name: opsdesk
           image: {{ include "opsdesk.image" . }}
@@ -58,6 +76,12 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: {{ . | quote }}
             {{- end }}
+          lifecycle:
+            # Endpoints and the router still send traffic briefly after SIGTERM: drain first, then shut down
+            # gracefully (server.shutdown=graceful). Native sleep action: Kubernetes 1.30+ / OpenShift 4.17+.
+            preStop:
+              sleep:
+                seconds: 5
           startupProbe:
             httpGet:
               path: /actuator/health/liveness

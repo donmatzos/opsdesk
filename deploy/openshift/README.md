@@ -32,14 +32,26 @@ oc get secret github-deployer-token -o jsonpath='{.data.token}' | base64 -d; ech
 ```
 If the cluster does not issue long-lived tokens, use `oc create token github-deployer --duration=720h` and renew it.
 
-## 3. GitHub settings (repository -> Settings -> Secrets and variables -> Actions)
+## 3. GitHub settings
+The deploy credentials belong to the **environment** `openshift-dev`, not to the repository: CI runs on every
+branch push, and only an environment with a branch rule keeps a branch from reading the token.
+
+1. Repository -> Settings -> **Environments** -> `openshift-dev` (created by the first run, or create it) ->
+   **Deployment branches and tags**: *Selected branches* -> `main`.
+2. In that environment, **Environment secrets**:
+
 | Kind | Name | Value |
 |---|---|---|
-| Secret | `OPENSHIFT_SERVER` | API URL from step 1 |
-| Secret | `OPENSHIFT_TOKEN` | service account token from step 2 |
-| Variable | `OPENSHIFT_NAMESPACE` | `<username>-dev` |
-| Variable | `PUBLISH_IMAGE` | `true` (the cluster pulls `ghcr.io/donmatzos/opsdesk`) |
-| Variable | `OPENSHIFT_DEPLOY` | `true` |
+| Environment secret | `OPENSHIFT_SERVER` | API URL from step 1 |
+| Environment secret | `OPENSHIFT_TOKEN` | service account token from step 2 |
+
+3. Repository -> Settings -> Secrets and variables -> Actions -> **Variables** (not secret):
+
+| Name | Value |
+|---|---|
+| `OPENSHIFT_NAMESPACE` | `<username>-dev` |
+| `PUBLISH_IMAGE` | `true` (the cluster pulls `ghcr.io/donmatzos/opsdesk`) |
+| `OPENSHIFT_DEPLOY` | `true` |
 
 The GHCR package must be **public** (GitHub -> Packages -> opsdesk -> Package settings), so the cluster can pull
 without credentials.
@@ -60,6 +72,8 @@ helm history opsdesk -n <ns>
 helm rollback opsdesk <revision> -n <ns> --wait
 helm uninstall opsdesk -n <ns>   # keeps the DB Secret and volume; delete them explicitly to reset
 ```
+GHCR keeps the newest 10 image versions (CI cleanup), so a rollback to an older revision fails with
+`ImagePullBackOff`. Flyway migrations are not rolled back; the older app starts as long as the schema is compatible.
 
 ## Notes
 - Pods run under the `restricted-v2` SCC: random UID, no privilege escalation, read-only root filesystem.

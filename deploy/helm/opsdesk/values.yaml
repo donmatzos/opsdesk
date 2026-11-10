@@ -24,6 +24,8 @@ database:
 
 # In-namespace PostgreSQL for dev/demo stages (Red Hat sclorg image, runs under OpenShift's random UID).
 # The password is generated in the cluster on first install and kept on upgrades; never in values.
+# Helm-only: with GitOps rendering (ArgoCD, helm template) lookup sees nothing and would regenerate it on every
+# sync; there use database.existingSecret instead.
 devDatabase:
   enabled: false
   image: quay.io/sclorg/postgresql-18-c10s:20261104
@@ -53,9 +55,12 @@ ingress:
 
 networkPolicy:
   enabled: true
-  # Namespaces whose pods may reach the app (default: the OpenShift router namespace).
-  ingressNamespaceLabels:
-    policy-group.network.openshift.io/ingress: ""
+  # Labels of the namespace whose pods may reach the app. Empty = the OpenShift router namespace
+  # (policy-group.network.openshift.io/ingress). Empty on purpose: Helm merges maps, so a non-empty default would
+  # be ANDed with your labels. With ingress.enabled on plain Kubernetes, set your controller's namespace
+  # (e.g. kubernetes.io/metadata.name: ingress-nginx); rendering fails otherwise. Routers on HostNetwork need
+  # policy-group.network.openshift.io/host-network: "".
+  ingressNamespaceLabels: {}
 
 resources:
   requests:

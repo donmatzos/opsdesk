@@ -44,10 +44,15 @@ spec:
             exec:
               command: ["/bin/sh", "-c", "pg_isready -h 127.0.0.1 -U \"$POSTGRESQL_USER\" -d \"$POSTGRESQL_DATABASE\""]
             periodSeconds: 5
+          # First start runs initdb (slow on some volumes): up to 5 min before liveness applies.
+          startupProbe:
+            exec:
+              command: ["/bin/sh", "-c", "pg_isready -h 127.0.0.1"]
+            periodSeconds: 5
+            failureThreshold: 60
           livenessProbe:
             exec:
               command: ["/bin/sh", "-c", "pg_isready -h 127.0.0.1"]
-            initialDelaySeconds: 30
             periodSeconds: 10
           resources:
             {{- toYaml .Values.devDatabase.resources | nindent 12 }}

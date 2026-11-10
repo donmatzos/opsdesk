@@ -130,3 +130,28 @@ tests:
       - equal:
           path: data.dbkey
           value: UkVVU0VE
+
+  # Start the app only once the dev database accepts connections (no CrashLoop backoff on first install).
+  - it: waits for the dev database before starting the app
+    template: deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: wait-for-db
+      - equal:
+          path: spec.template.spec.initContainers[0].image
+          value: quay.io/sclorg/postgresql-18-c10s:20261104
+      - matchRegex:
+          path: spec.template.spec.initContainers[0].command[2]
+          pattern: pg_isready -h opsdesk-db
+      - equal:
+          path: spec.template.spec.initContainers[0].securityContext.readOnlyRootFilesystem
+          value: true
+
+  - it: gives a slow first initdb time before liveness applies
+    template: dev-database.yaml
+    documentIndex: 0
+    asserts:
+      - isNotEmpty:
+          path: spec.template.spec.containers[0].startupProbe.exec.command
+

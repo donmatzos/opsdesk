@@ -36,6 +36,8 @@ tests:
       route.enabled: false
       ingress.enabled: true
       ingress.host: opsdesk.example.test
+      networkPolicy.ingressNamespaceLabels:
+        kubernetes.io/metadata.name: ingress-nginx
     asserts:
       - template: route.yaml
         hasDocuments: { count: 0 }
