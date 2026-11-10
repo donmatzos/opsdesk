@@ -63,9 +63,9 @@ jobs:
         if: always()
         uses: mikepenz/action-junit-report@a16be3a69023e9bd7e748ede768b3282ea7b30ce # v6.7.1
         with:
-          report_paths: |
-            backend/target/surefire-reports/TEST-*.xml
-            frontend/target/test-reports/*.xml
+          # One glob (braces) = one combined report. Separate lines would create one check per line
+          # under the same name, and the last one hides the others.
+          report_paths: "{backend/target/surefire-reports/TEST-*.xml,frontend/target/test-reports/*.xml}"
           check_name: Test report
           include_passed: true
           detailed_summary: true
