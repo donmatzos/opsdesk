@@ -1,0 +1,25 @@
+# Local development only. The password comes from deploy/compose/.env (git-ignored), see .env.example.
+name: opsdesk
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    # The password comes only from .env (git-ignored, template .env.example); without it nothing starts.
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      POSTGRES_DB: opsdesk
+      POSTGRES_USER: opsdesk
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opsdesk -d opsdesk"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:
