@@ -13,6 +13,10 @@ updates:
     labels: [dependencies]
     groups:
       npm-minor-patch: { update-types: [minor, patch] }
+    ignore:
+      # Angular decides the supported TypeScript range; TypeScript majors follow the Angular upgrade.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
@@ -21,5 +25,13 @@ updates:
       actions-minor-patch: { update-types: [minor, patch] }
   - package-ecosystem: docker
     directory: /
+    schedule: { interval: weekly }
+    labels: [dependencies]
+  - package-ecosystem: docker-compose
+    directory: /deploy/compose
+    schedule: { interval: weekly }
+    labels: [dependencies]
+  - package-ecosystem: terraform
+    directory: /infra/terraform/datadog
     schedule: { interval: weekly }
     labels: [dependencies]

@@ -9,8 +9,8 @@ Source: owner's resume (2026-11). Direction: DevOps with a software engineering 
 | Docker | A | multi-stage `Dockerfile`, non-root, arbitrary UID (OpenShift-safe), healthcheck |
 | Kubernetes / OpenShift, Helm | A | `deploy/helm/opsdesk` (Deployment, Service, Route/Ingress switch, probes, NetworkPolicy, values per stage); CI: `helm lint/template` always; `oc login` + `helm upgrade --install` + smoke test, gated on OpenShift secrets (off without a cluster; Red Hat Developer Sandbox can make it real) |
 | DevSecOps: Trivy, SonarQube, secrets | A | Trivy fs + image scan in CI; SonarCloud (free for public repos) or Sonar step mocked; secrets only via CI secrets; Dependabot |
-| Observability: Datadog, Elastic | A | Actuator + Micrometer business metrics (real, Prometheus endpoint); ECS JSON logs for Elastic (real); Datadog registry + monitors as code (C) |
-| Terraform (IaC) | B | `infra/terraform/datadog` (monitors, dashboard) and `azure` (AI Search, OpenAI): `terraform validate` in CI is real, `apply` never runs |
+| Observability: Datadog, Elastic | A | Micrometer business metrics + `/actuator/prometheus` (real); ECS JSON logs with trace ids + local Elastic stack (Filebeat, Kibana) (real); Datadog registry, Unified Service Tagging, monitors/dashboard as Terraform (C) |
+| Terraform (IaC) | B | `infra/terraform/datadog` (monitors, dashboard; fmt/validate/tflint in CI, done) and `azure` (phase 6); `apply` never runs |
 | Ansible Tower | C | `infra/ansible`: small playbook + Tower job template via Terraform `awx` provider (commented) |
 | Jenkins | C | `ci/jenkins/Jenkinsfile` (Groovy declarative), same stages as GH Actions |
 | Artifactory | C | Maven `distributionManagement` + Helm repo push, commented; real publish to GitHub Packages / GHCR |

@@ -7,6 +7,8 @@ Phase 2 merged (PR #3): JaCoCo + Vitest coverage, SonarCloud, `Dockerfile` (UBI 
 
 Phase 3 merged (PR #7): probes + graceful shutdown; Helm chart (restricted SCC, Route/Ingress, NetworkPolicies, values schema, 25 helm-unittest tests, kubeconform, Trivy via `trivy.yaml`), dev PostgreSQL (sclorg) with in-cluster password, prod values (mock), `tools/kind-verify.sh` (passed locally), CI jobs `helm` and `deploy-dev` (OpenShift, off until `OPENSHIFT_DEPLOY=true`).
 
+Phase 4 on `feature/observability` (not merged): incident metrics (`/actuator/prometheus`, after-commit), ECS JSON logs with trace ids, local Elastic stack (`tools/elastic-verify.sh`, passed), Datadog mock (profile + key check, chart tagging), Terraform monitors/dashboard (CI job `terraform`), Dependabot: terraform, docker-compose, TypeScript majors ignored.
+
 ## Next up
-1. Phase 4 `feature/observability`: plan `docs/plans/2026-11-10-phase-4-observability.md` (owner review pending). Owner decision: local Elastic stack as compose profile.
-2. Dependabot PRs #4 (maven patch), #6 (jsdom major): merge when green; #5 (TypeScript 7): close (Angular 22 needs TS 6); phase 4 adds an ignore rule.
+1. Owner reviews and merges `feature/observability`.
+2. Phase 5 `feature/mcp-server`: write its plan first.
