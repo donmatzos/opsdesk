@@ -12,7 +12,7 @@ public final class McpTestClient {
     private McpTestClient() {
     }
 
-    /** The token is sent as a bearer header; the server ignores it until the token filter exists. */
+    /** The token is sent as a bearer header; the server rejects any other value with 401. */
     public static McpSyncClient connect(int port, String token) {
         var transport = HttpClientStreamableHttpTransport.builder("http://localhost:" + port)
                 .endpoint("/mcp")

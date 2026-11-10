@@ -88,6 +88,14 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: {{ . | quote }}
             {{- end }}
+            {{- with .Values.mcp.tokenSecret }}
+            # Bearer token for /mcp from an existing Secret (key "token"); without it MCP stays disabled (503).
+            - name: OPSDESK_MCP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ . }}
+                  key: token
+            {{- end }}
             {{- if .Values.datadog.enabled }}
             # MOCK: Datadog (no account). The app posts metrics to the Datadog API with this key and turns
             # DD_SERVICE/DD_ENV/DD_VERSION into metric tags (Unified Service Tagging).

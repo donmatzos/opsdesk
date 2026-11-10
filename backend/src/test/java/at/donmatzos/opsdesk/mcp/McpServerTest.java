@@ -5,7 +5,6 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import tools.jackson.databind.json.JsonMapper;
@@ -24,8 +23,6 @@ public class McpServerTest extends IntegrationTest {
     @Autowired
     private MeterRegistry registry;
 
-    private final String token = UUID.randomUUID().toString();
-
     /** The tool result is one text block holding a JSON array of services. */
     private static List<String> names(McpSchema.CallToolResult result) {
         var text = ((McpSchema.TextContent) result.content().getFirst()).text();
@@ -34,7 +31,7 @@ public class McpServerTest extends IntegrationTest {
 
     @Test
     public void shouldListToolsAndCallListServices() {
-        try (McpSyncClient mcp = McpTestClient.connect(port, token)) {
+        try (McpSyncClient mcp = McpTestClient.connect(port, mcpToken())) {
             McpSchema.Tool tool = mcp.listTools().tools().stream()
                     .filter(t -> t.name().equals("list_services")).findFirst().orElseThrow();
             assertThat(tool.description()).isNotBlank();
@@ -53,14 +50,15 @@ public class McpServerTest extends IntegrationTest {
 
     @Test
     public void shouldServeIndependentClientsWithoutSessions() {
-        try (McpSyncClient first = McpTestClient.connect(port, token);
-             McpSyncClient second = McpTestClient.connect(port, token)) {
+        try (McpSyncClient first = McpTestClient.connect(port, mcpToken());
+             McpSyncClient second = McpTestClient.connect(port, mcpToken())) {
             assertThat(first.callTool(new McpSchema.CallToolRequest("list_services", Map.of())).isError()).isFalse();
             assertThat(second.callTool(new McpSchema.CallToolRequest("list_services", Map.of())).isError()).isFalse();
         }
 
         // Stateless: no initialize, no Mcp-Session-Id, and the request still works.
         client().post().uri("/mcp")
+                .header("Authorization", "Bearer " + mcpToken())
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json, text/event-stream")
                 .body("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{}}")
@@ -83,7 +81,7 @@ public class McpServerTest extends IntegrationTest {
 
     @Test
     public void shouldOpenAndResolveAnIncidentThroughMcp() {
-        try (McpSyncClient mcp = McpTestClient.connect(port, token)) {
+        try (McpSyncClient mcp = McpTestClient.connect(port, mcpToken())) {
             var status = call(mcp, "get_service_status", Map.of("service_name", "billing-api"));
             assertThat(status.isError()).isFalse();
             assertThat(JSON.readTree(text(status)).get("name").asString()).isEqualTo("billing-api");
@@ -111,7 +109,7 @@ public class McpServerTest extends IntegrationTest {
     @Test
     public void shouldCountMcpWritesInMetrics() {
         double before = opened("SEV1");
-        try (McpSyncClient mcp = McpTestClient.connect(port, token)) {
+        try (McpSyncClient mcp = McpTestClient.connect(port, mcpToken())) {
             var result = call(mcp, "open_incident",
                     Map.of("service_name", "billing-api", "severity", "SEV1", "summary", "metrics check"));
             assertThat(result.isError()).isFalse();
@@ -121,7 +119,7 @@ public class McpServerTest extends IntegrationTest {
 
     @Test
     public void shouldReturnToolErrorsNotServerErrors() {
-        try (McpSyncClient mcp = McpTestClient.connect(port, token)) {
+        try (McpSyncClient mcp = McpTestClient.connect(port, mcpToken())) {
             var missing = call(mcp, "get_incident", Map.of("incident_id", 999_999_999L));
             assertThat(missing.isError()).isTrue();
             assertThat(text(missing)).isEqualTo("Incident 999999999 not found");
@@ -150,7 +148,7 @@ public class McpServerTest extends IntegrationTest {
 
     @Test
     public void shouldListActiveIncidentsWithoutSeverityFilter() {
-        try (McpSyncClient mcp = McpTestClient.connect(port, token)) {
+        try (McpSyncClient mcp = McpTestClient.connect(port, mcpToken())) {
             long id = JSON.readTree(text(call(mcp, "open_incident",
                     Map.of("service_name", "billing-api", "severity", "SEV3", "summary", "unfiltered list"))))
                     .get("id").asLong();
