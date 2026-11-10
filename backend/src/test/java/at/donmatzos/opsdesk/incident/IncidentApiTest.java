@@ -15,6 +15,8 @@ import org.testng.annotations.Test;
 
 public class IncidentApiTest extends IntegrationTest {
 
+    private static final String ISO_UTC = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z";
+
     @Autowired
     private MonitoredServiceRepository services;
 
@@ -23,13 +25,13 @@ public class IncidentApiTest extends IntegrationTest {
                 .filter(s -> s.name().equals("billing-api")).findFirst().orElseThrow().id();
     }
 
-    private Incident open(String summary) {
-        Incident created = client().post().uri("/api/incidents").contentType(MediaType.APPLICATION_JSON)
+    private IncidentResponse open(String summary) {
+        IncidentResponse created = client().post().uri("/api/incidents").contentType(MediaType.APPLICATION_JSON)
                 .body(Map.of("serviceId", billingApiId(), "severity", "SEV2", "summary", summary))
                 .exchange()
                 .expectStatus().isCreated()
-                .expectHeader().valueMatches("Location", "/api/incidents/\\d+")
-                .expectBody(Incident.class).returnResult().getResponseBody();
+                .expectHeader().valueMatches("Location", "http://localhost:\\d+/api/incidents/\\d+")
+                .expectBody(IncidentResponse.class).returnResult().getResponseBody();
         assertNotNull(created);
         return created;
     }
@@ -61,14 +63,38 @@ public class IncidentApiTest extends IntegrationTest {
     }
 
     private List<Long> idsFor(String state) {
-        Incident[] incidents = client().get().uri("/api/incidents?state={s}", state).exchange()
-                .expectStatus().isOk().expectBody(Incident[].class).returnResult().getResponseBody();
+        IncidentResponse[] incidents = client().get().uri("/api/incidents?state={s}", state).exchange()
+                .expectStatus().isOk().expectBody(IncidentResponse[].class).returnResult().getResponseBody();
         assertNotNull(incidents);
-        return Arrays.stream(incidents).map(Incident::id).toList();
+        return Arrays.stream(incidents).map(IncidentResponse::id).toList();
     }
 
     @Test
-    public void shouldReturn422ForUnknownServiceId() {
+    public void shouldSerializeTimestampsAsIso8601Utc() {
+        long id = open("Timestamp format").id();
+
+        client().patch().uri("/api/incidents/{id}", id).contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("state", "RESOLVED")).exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.openedAt").value(String.class, v -> assertTrue(v.matches(ISO_UTC), v))
+                .jsonPath("$.resolvedAt").value(String.class, v -> assertTrue(v.matches(ISO_UTC), v))
+                .jsonPath("$.version").doesNotExist();
+    }
+
+    @Test
+    public void shouldReturn409ProblemWhenStateIsUnchanged() {
+        long id = open("Same state").id();
+
+        client().patch().uri("/api/incidents/{id}", id).contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("state", "OPEN")).exchange()
+                .expectStatus().isEqualTo(409)
+                .expectHeader().contentType("application/problem+json")
+                .expectBody().jsonPath("$.detail").isEqualTo("Cannot change incident state from OPEN to OPEN");
+    }
+
+    @Test
+    public void shouldReturn422WhenServiceIdIsUnknown() {
         client().post().uri("/api/incidents").contentType(MediaType.APPLICATION_JSON)
                 .body(Map.of("serviceId", 999999, "severity", "SEV2", "summary", "Ghost"))
                 .exchange()
@@ -77,7 +103,7 @@ public class IncidentApiTest extends IntegrationTest {
     }
 
     @Test
-    public void shouldReturn404ForUnknownIncident() {
+    public void shouldReturn404WhenIncidentIsUnknown() {
         patch(999999, "MITIGATED", 404);
     }
 }

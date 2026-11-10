@@ -13,6 +13,11 @@
     <artifactId>backend</artifactId>
     <name>opsdesk backend</name>
 
+    <properties>
+        <!-- empty default so @{argLine} resolves before JaCoCo (phase 2) contributes to it -->
+        <argLine/>
+    </properties>
+
     <dependencies>
         <!-- Angular build output (META-INF/resources), so one jar serves UI and API -->
         <dependency>
@@ -93,6 +98,25 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <!-- Load Mockito as a Java agent: JDK 21+ warns about (and will block) dynamic self-attach -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -18,7 +18,7 @@ public class CatalogApiTest extends IntegrationTest {
     }
 
     @Test
-    public void shouldReturnProblemDetailForUnknownService() {
+    public void shouldReturn404ProblemWhenServiceIsUnknown() {
         client().get().uri("/api/services/999999").exchange()
                 .expectStatus().isNotFound()
                 .expectHeader().contentType("application/problem+json")

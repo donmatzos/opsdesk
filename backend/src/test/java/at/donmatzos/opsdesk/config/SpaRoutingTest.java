@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
 public class SpaRoutingTest extends IntegrationTest {
 
     @Test
-    public void shouldServeIndexHtmlForDeepLink() {
+    public void shouldServeIndexHtmlWhenDeepLinkIsRefreshed() {
         client().get().uri("/incidents/7").accept(MediaType.TEXT_HTML).exchange()
                 .expectStatus().isOk()
                 .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
@@ -18,7 +18,7 @@ public class SpaRoutingTest extends IntegrationTest {
     }
 
     @Test
-    public void shouldKeepProblemDetailForUnknownApiPath() {
+    public void shouldKeepProblemDetailWhenApiPathIsUnknown() {
         client().get().uri("/api/unknown").exchange()
                 .expectStatus().isNotFound()
                 .expectHeader().contentType("application/problem+json");
