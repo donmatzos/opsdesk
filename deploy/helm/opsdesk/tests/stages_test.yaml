@@ -1,0 +1,31 @@
+suite: stage values
+release:
+  name: opsdesk
+tests:
+  - it: prod autoscales 2-4 pods and keeps one available during disruptions
+    values: [../values-prod.yaml]
+    asserts:
+      - template: hpa.yaml
+        equal: { path: spec.minReplicas, value: 2 }
+      - template: hpa.yaml
+        equal: { path: spec.maxReplicas, value: 4 }
+      - template: pdb.yaml
+        equal: { path: spec.minAvailable, value: 1 }
+      - template: deployment.yaml
+        notExists: { path: spec.replicas }
+      - template: dev-database.yaml
+        hasDocuments: { count: 0 }
+
+  - it: dev runs the demo profile with its own database and no autoscaling
+    values: [../values-dev.yaml]
+    asserts:
+      - template: hpa.yaml
+        hasDocuments: { count: 0 }
+      - template: pdb.yaml
+        hasDocuments: { count: 0 }
+      - template: dev-database.yaml
+        hasDocuments: { count: 3 }
+      - template: deployment.yaml
+        contains:
+          path: spec.template.spec.containers[0].env
+          content: { name: SPRING_PROFILES_ACTIVE, value: demo }

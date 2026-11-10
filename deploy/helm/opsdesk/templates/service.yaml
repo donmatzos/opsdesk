@@ -7,7 +7,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    {{- include "opsdesk.selectorLabels" . | nindent 4 }}
+    {{- include "opsdesk.appSelectorLabels" . | nindent 4 }}
   ports:
     - name: http
       port: 8080

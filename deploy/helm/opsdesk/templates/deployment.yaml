@@ -18,11 +18,11 @@ spec:
       maxSurge: 1
   selector:
     matchLabels:
-      {{- include "opsdesk.selectorLabels" . | nindent 6 }}
+      {{- include "opsdesk.appSelectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "opsdesk.selectorLabels" . | nindent 8 }}
+        {{- include "opsdesk.appSelectorLabels" . | nindent 8 }}
       {{- with .Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}

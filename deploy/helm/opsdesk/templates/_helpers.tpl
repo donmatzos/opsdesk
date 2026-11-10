@@ -22,6 +22,17 @@ app.kubernetes.io/name: {{ include "opsdesk.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
+{{/* App and database pods share name/instance, so each gets its own component label. */}}
+{{- define "opsdesk.appSelectorLabels" -}}
+{{ include "opsdesk.selectorLabels" . }}
+app.kubernetes.io/component: server
+{{- end }}
+
+{{- define "opsdesk.dbSelectorLabels" -}}
+{{ include "opsdesk.selectorLabels" . }}
+app.kubernetes.io/component: database
+{{- end }}
+
 {{- define "opsdesk.labels" -}}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" }}
 {{ include "opsdesk.selectorLabels" . }}

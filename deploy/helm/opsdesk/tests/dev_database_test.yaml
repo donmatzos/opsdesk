@@ -1,0 +1,116 @@
+suite: dev database
+release:
+  name: opsdesk
+  namespace: dev
+set:
+  devDatabase.enabled: true
+tests:
+  - it: renders a PostgreSQL StatefulSet, Service and NetworkPolicy only when enabled
+    template: dev-database.yaml
+    asserts:
+      - hasDocuments: { count: 3 }
+      - documentIndex: 0
+        isKind: { of: StatefulSet }
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.containers[0].image
+          value: quay.io/sclorg/postgresql-18-c10s:20261104
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: POSTGRESQL_PASSWORD
+            valueFrom:
+              secretKeyRef: { name: opsdesk-db, key: password }
+      - documentIndex: 0
+        notExists:
+          path: spec.template.spec.securityContext.runAsUser
+      - documentIndex: 1
+        isKind: { of: Service }
+
+  - it: renders nothing for the database when disabled
+    template: dev-database.yaml
+    set:
+      devDatabase.enabled: false
+      database.existingSecret: opsdesk-db
+      database.url: jdbc:postgresql://db:5432/opsdesk
+    asserts:
+      - hasDocuments: { count: 0 }
+
+  - it: lets only the app pods reach the database
+    template: dev-database.yaml
+    documentIndex: 2
+    asserts:
+      - isKind: { of: NetworkPolicy }
+      - equal:
+          path: spec.podSelector.matchLabels
+          value:
+            app.kubernetes.io/name: opsdesk
+            app.kubernetes.io/instance: opsdesk
+            app.kubernetes.io/component: database
+      - equal:
+          path: spec.ingress
+          value:
+            - from:
+                - podSelector:
+                    matchLabels:
+                      app.kubernetes.io/name: opsdesk
+                      app.kubernetes.io/instance: opsdesk
+                      app.kubernetes.io/component: server
+              ports:
+                - { port: 5432, protocol: TCP }
+
+  - it: keeps app and database pods apart (the Service selects only the app)
+    template: service.yaml
+    asserts:
+      - equal:
+          path: spec.selector
+          value:
+            app.kubernetes.io/name: opsdesk
+            app.kubernetes.io/instance: opsdesk
+            app.kubernetes.io/component: server
+
+  - it: points the app at the dev database
+    template: deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: { name: SPRING_DATASOURCE_URL, value: "jdbc:postgresql://opsdesk-db:5432/opsdesk" }
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SPRING_DATASOURCE_PASSWORD
+            valueFrom:
+              secretKeyRef: { name: opsdesk-db, key: password }
+
+  - it: generates a 32-character password that survives helm uninstall
+    template: dev-database-secret.yaml
+    asserts:
+      - isKind: { of: Secret }
+      - equal:
+          path: metadata.annotations["helm.sh/resource-policy"]
+          value: keep
+      - matchRegex:
+          path: data.password
+          pattern: ^[A-Za-z0-9+/]{43}=$
+
+  # Review Focus 2: an upgrade must not replace the password of an existing database.
+  - it: reuses the value of an existing Secret on upgrade
+    template: dev-database-secret.yaml
+    set:
+      database.passwordKey: dbkey
+    kubernetesProvider:
+      scheme:
+        "v1/Secret":
+          gvr: { version: v1, resource: secrets }
+          namespaced: true
+      objects:
+        - kind: Secret
+          apiVersion: v1
+          metadata: { name: opsdesk-db, namespace: dev }
+          # base64 of the marker REUSED (not a credential)
+          data: { dbkey: UkVVU0VE }
+    asserts:
+      - equal:
+          path: data.dbkey
+          value: UkVVU0VE
