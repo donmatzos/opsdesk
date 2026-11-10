@@ -9,7 +9,7 @@ Purpose: let an AI assistant (Claude Code/Desktop, Copilot) look up services and
 ## Tools (tool descriptions are written for the model)
 | Tool | Parameters | Notes |
 |---|---|---|
-| `list_services` | `stage?` (DEV, PROD) | id, name, ownerTeam, stage, status; read-only |
+| `list_services` | `stage?` (DEV, PROD) | id, name, ownerTeam, stage, status; read-only; returns all matches (no cap, no `truncated`) |
 | `get_service_status` | `service_name` | exact, case-sensitive; unknown name -> tool error |
 | `list_active_incidents` | `severity?` (SEV1..SEV3) | OPEN/MITIGATED, newest first, max 50, `truncated` flag |
 | `get_incident` | `incident_id` | unknown id -> tool error |
@@ -20,5 +20,5 @@ Tools call `IncidentService`, so validation, transitions, metrics and ECS logs m
 ## Connect
 Start the app with a token: `docker compose -f deploy/compose/compose.yml --profile app up -d --build --wait` (token in `.env`).
 - Claude Code: root `.mcp.json` (project scope) holds server `opsdesk` and `${OPSDESK_MCP_TOKEN}`; export the token, then run `claude` in the repo and approve the server (`/mcp` shows it).
-- Claude Desktop: no env expansion in remote servers; use `npx mcp-remote http://localhost:8080/mcp --header "Authorization: Bearer <token>"` in `claude_desktop_config.json` (local file only).
+- Claude Desktop (untested here): a remote server with a bearer header is probably possible via a bridge such as `npx mcp-remote http://localhost:8080/mcp --header "Authorization: Bearer <token>"` in `claude_desktop_config.json`; check the current Claude Desktop and mcp-remote docs, this was not verified.
 - Inspector / CI-style check: `set -a; . deploy/compose/.env; set +a; tools/mcp-verify.sh` (401 without token, 6 tools, 4 demo services, prints `MCP VERIFY PASS`). Interactive: `npx @modelcontextprotocol/inspector@2.14.0`, transport Streamable HTTP, header `Authorization`.
