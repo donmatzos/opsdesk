@@ -10,4 +10,18 @@ public class ApplicationContextTest extends IntegrationTest {
                 .expectStatus().isOk()
                 .expectBody().jsonPath("$.status").isEqualTo("UP");
     }
+
+    @Test
+    public void shouldExposeLivenessProbe() {
+        client().get().uri("/actuator/health/liveness").exchange()
+                .expectStatus().isOk()
+                .expectBody().jsonPath("$.status").isEqualTo("UP");
+    }
+
+    @Test
+    public void shouldExposeReadinessProbe() {
+        client().get().uri("/actuator/health/readiness").exchange()
+                .expectStatus().isOk()
+                .expectBody().jsonPath("$.status").isEqualTo("UP");
+    }
 }
