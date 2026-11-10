@@ -83,4 +83,20 @@ public class McpTokenFilterTest {
         };
         new McpTokenFilter(TOKEN).doFilter(request("Bearer nope"), new MockHttpServletResponse(), chain);
     }
+
+    @Test
+    public void shouldIgnoreWhitespaceAroundConfiguredToken() throws Exception {
+        var chain = new MockFilterChain();
+        var response = run(new McpTokenFilter(TOKEN + "\n"), request("Bearer " + TOKEN), chain);
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(chain.getRequest()).isNotNull();
+    }
+
+    @Test
+    public void shouldTreatWhitespaceOnlyTokenAsDisabled() throws Exception {
+        var chain = new MockFilterChain();
+        var response = run(new McpTokenFilter(" \n\t "), request("Bearer anything"), chain);
+        assertThat(response.getStatus()).isEqualTo(503);
+        assertThat(chain.getRequest()).isNull();
+    }
 }

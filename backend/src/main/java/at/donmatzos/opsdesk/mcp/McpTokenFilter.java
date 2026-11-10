@@ -12,7 +12,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Protects the MCP endpoint with one shared bearer token (opsdesk.mcp.token, env OPSDESK_MCP_TOKEN).
- * No token configured: MCP is disabled (503). A missing or wrong token gets 401 and nothing else runs: the
+ * Surrounding whitespace of the configured token (e.g. a trailing newline from a Secret file) is stripped.
+ * No token configured (or blank): MCP is disabled (503). A missing or wrong token gets 401 and nothing else runs: the
  * filter chain is not invoked. The token is never logged or echoed. Registered for /mcp and /mcp/* only
  * (see McpSecurityConfig), so the REST API and the UI are not affected.
  */
@@ -23,7 +24,8 @@ public class McpTokenFilter extends OncePerRequestFilter {
     private final byte[] expected;
 
     public McpTokenFilter(String token) {
-        this.expected = token == null || token.isBlank() ? null : token.getBytes(StandardCharsets.UTF_8);
+        String stripped = token == null ? "" : token.strip();
+        this.expected = stripped.isEmpty() ? null : stripped.getBytes(StandardCharsets.UTF_8);
     }
 
     @Override

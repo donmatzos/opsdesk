@@ -3,7 +3,7 @@ Purpose: let an AI assistant (Claude Code/Desktop, Copilot) look up services and
 
 ## Transport and auth
 - Spring AI 2.0.2 MCP server inside the backend jar (no separate module), Streamable HTTP at `POST /mcp` on :8080. `protocol: STATELESS`: no session in the pod, any replica answers (no sticky routing). Code: `backend/src/main/java/at/donmatzos/opsdesk/mcp/`.
-- Auth: `Authorization: Bearer <token>`. Token from env `OPSDESK_MCP_TOKEN` (`opsdesk.mcp.token`). Unset/empty -> `/mcp` answers 503 (MCP off, rest of the app unaffected); missing or wrong token -> 401. Constant-time compare in `McpTokenFilter`.
+- Auth: `Authorization: Bearer <token>`. Token from env `OPSDESK_MCP_TOKEN` (`opsdesk.mcp.token`). Unset/empty -> `/mcp` answers 503 (MCP off, rest of the app unaffected); missing or wrong token -> 401. Constant-time compare in `McpTokenFilter`. Surrounding whitespace in the configured token (e.g. a trailing newline) is stripped; a blank token counts as unset.
 - Generate a token: `openssl rand -hex 32`. Local: put it in `deploy/compose/.env` (git-ignored). Cluster: Secret with key `token`, Helm `mcp.tokenSecret` = its name (env via `secretKeyRef`). Never commit a token.
 
 ## Tools (tool descriptions are written for the model)

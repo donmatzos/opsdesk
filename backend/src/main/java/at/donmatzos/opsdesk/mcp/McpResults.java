@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -48,6 +49,9 @@ final class McpResults {
             return body.get();
         } catch (NotFoundException | ConflictException | UnprocessableException e) {
             return error(e.getMessage());
+        } catch (OptimisticLockingFailureException e) {
+            log.debug("MCP tool hit a concurrent modification: {}", e.getClass().getSimpleName());
+            return error("The incident was changed concurrently; re-read it with get_incident and retry.");
         } catch (RuntimeException e) {
             log.atError().setMessage("MCP tool failed").setCause(e).log();
             return error("The operation failed unexpectedly. Try again later.");

@@ -151,4 +151,16 @@ public class IncidentToolsTest {
         assertThat(result.isError()).isTrue();
         assertThat(text(result)).doesNotContain("select");
     }
+
+    @Test
+    public void shouldExplainConcurrentModification() {
+        when(incidents.changeState(7L, IncidentState.MITIGATED))
+                .thenThrow(new org.springframework.dao.OptimisticLockingFailureException("row was updated"));
+
+        CallToolResult result = tools.changeIncidentState(7L, "MITIGATED");
+
+        assertThat(result.isError()).isTrue();
+        assertThat(text(result)).isEqualTo(
+                "The incident was changed concurrently; re-read it with get_incident and retry.");
+    }
 }
