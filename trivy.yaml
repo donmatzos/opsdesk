@@ -1,0 +1,17 @@
+# Trivy settings shared by CI (trivy-fs job) and local runs: trivy fs --config trivy.yaml .
+scan:
+  # Resolving pom.xml hits Maven Central rate limits (HTTP 429); Java dependencies are scanned in the image
+  # job instead (every runtime jar in /app/lib).
+  skip-files:
+    - "**/pom.xml"
+  skip-dirs:
+    - frontend/node_modules
+    - frontend/node
+    - "**/target"
+    - .superpowers
+# Without Helm values the chart does not render (it requires a database Secret by design) and Trivy silently
+# skips it ("Not scanned"); the dev values make it render, so its misconfigurations are checked.
+misconfiguration:
+  helm:
+    values:
+      - deploy/helm/opsdesk/values-dev.yaml

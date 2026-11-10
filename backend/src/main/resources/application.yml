@@ -4,12 +4,26 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  lifecycle:
+    # Finish in-flight requests before the pod stops (Kubernetes sends SIGTERM, then waits terminationGracePeriodSeconds).
+    timeout-per-shutdown-phase: 20s
   # No fallbacks on purpose: a stage without SPRING_DATASOURCE_* (from a Secret) fails fast.
   # Never put a password in this file, not even a local one.
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
+
+server:
+  shutdown: graceful
+
+# Kubernetes probes (/actuator/health/liveness, /readiness). Explicit, so they also exist outside a cluster
+# (tests, smoke test) and do not depend on a default.
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
 
 ---
 # Demo data for local runs, tests and the showcase; never active in a real stage.

@@ -16,6 +16,10 @@ until [[ $(curl -fsS --max-time 5 "${base_url}/actuator/health" 2>/dev/null) == 
 done
 echo "ok  health UP"
 
+readiness=$(curl -fsS --max-time 5 "${base_url}/actuator/health/readiness") || fail "GET /actuator/health/readiness failed"
+[[ $readiness == *'"status":"UP"'* ]] || fail "readiness probe not UP: ${readiness:0:200}"
+echo "ok  readiness probe UP"
+
 services=$(curl -fsS --max-time 10 -H 'Accept: application/json' "${base_url}/api/services") || fail "GET /api/services failed"
 [[ $services == \[* ]] || fail "GET /api/services did not return a JSON array: ${services:0:200}"
 echo "ok  /api/services returns JSON"

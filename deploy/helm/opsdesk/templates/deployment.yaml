@@ -1,0 +1,112 @@
+{{- /* Resolve the Secret first: a missing Secret is the more important error than a missing URL. */}}
+{{- $dbSecret := include "opsdesk.dbSecretName" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "opsdesk.fullname" . }}
+  labels:
+    {{- include "opsdesk.labels" . | nindent 4 }}
+spec:
+  {{- if not (.Values.autoscaling).enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      {{- include "opsdesk.appSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "opsdesk.appSelectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "opsdesk.fullname" . }}
+      automountServiceAccountToken: false
+      # No runAsUser/fsGroup: OpenShift assigns a random UID from the namespace range (group 0).
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
+      {{- if .Values.devDatabase.enabled }}
+      initContainers:
+        # Start the app only when the dev database accepts connections (avoids CrashLoop backoff on first install).
+        - name: wait-for-db
+          image: {{ .Values.devDatabase.image }}
+          command:
+            - /bin/sh
+            - -c
+            - until pg_isready -h {{ include "opsdesk.fullname" . }}-db -p 5432 -t 2; do echo waiting for database; sleep 2; done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          securityContext:
+            {{- include "opsdesk.containerSecurityContext" . | nindent 12 }}
+      {{- end }}
+      containers:
+        - name: opsdesk
+          image: {{ include "opsdesk.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: {{ include "opsdesk.dbUrl" . | quote }}
+            - name: SPRING_DATASOURCE_USERNAME
+              value: {{ .Values.database.username | quote }}
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $dbSecret }}
+                  key: {{ .Values.database.passwordKey }}
+            {{- with .Values.springProfiles }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: {{ . | quote }}
+            {{- end }}
+          lifecycle:
+            # Endpoints and the router still send traffic briefly after SIGTERM: drain first, then shut down
+            # gracefully (server.shutdown=graceful). Native sleep action: Kubernetes 1.30+ / OpenShift 4.17+.
+            preStop:
+              sleep:
+                seconds: 5
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 5
+            failureThreshold: 36
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- include "opsdesk.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

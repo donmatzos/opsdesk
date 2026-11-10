@@ -18,8 +18,9 @@ concurrency:
 
 env:
   IMAGE: ghcr.io/${{ github.repository }}
-  # SARIF upload needs security-events: write, which fork and Dependabot PRs do not get.
-  CAN_UPLOAD_SARIF: ${{ github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') }}
+  # SARIF upload: PRs from this repo (not forks/Dependabot: no security-events: write) and main. Feature-branch push
+  # runs skip it: the PR run uploads the same commit, and a branch deleted after merge makes the upload fail.
+  CAN_UPLOAD_SARIF: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 jobs:
   verify:
@@ -61,14 +62,14 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # pom.xml files are skipped: resolving them hits Maven Central rate limits. Java dependencies are
-      # scanned in the image job instead (every runtime jar in /app/lib).
+      # trivy.yaml: skips pom.xml (Maven Central rate limits; jars are scanned in the image job) and renders
+      # the Helm chart with the dev values so its misconfigurations are checked.
       - name: Scan (SARIF for code scanning)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scanners: vuln,secret,misconfig
-          skip-files: "**/pom.xml"
+          trivy-config: trivy.yaml
           format: sarif
           output: trivy-fs.sarif
           exit-code: "0"
@@ -83,15 +84,24 @@ jobs:
         with:
           scan-type: fs
           scanners: vuln,secret,misconfig
-          skip-files: "**/pom.xml"
+          trivy-config: trivy.yaml
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
           skip-setup-trivy: true
 
+  helm:
+    name: Helm chart (lint, unit tests, schema)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: helm lint + helm-unittest + kubeconform (Docker)
+        run: tools/helm-check.sh
+
   image:
     name: Image (build, scan, smoke test)
-    needs: [verify, trivy-fs]
+    needs: [verify, trivy-fs, helm]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -201,3 +211,76 @@ jobs:
           package-name: ${{ github.event.repository.name }}
           package-type: container
           min-versions-to-keep: 10
+
+  deploy-dev:
+    name: Deploy to OpenShift (dev)
+    # Switched on with the repository variable OPENSHIFT_DEPLOY=true; needs the published image.
+    # Setup (Developer Sandbox, service account, secrets): deploy/openshift/README.md
+    needs: publish
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.OPENSHIFT_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: openshift-dev
+      url: ${{ steps.route.outputs.url }}
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: false
+    env:
+      OC_VERSION: 5.0.1
+      RELEASE: opsdesk
+      NAMESPACE: ${{ vars.OPENSHIFT_NAMESPACE }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install oc ${{ env.OC_VERSION }} (checksum verified)
+        run: |
+          base="https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OC_VERSION}"
+          curl -fsSLO "${base}/openshift-client-linux.tar.gz"
+          curl -fsSL "${base}/sha256sum.txt" | grep ' openshift-client-linux.tar.gz$' | sha256sum -c -
+          sudo tar -xzf openshift-client-linux.tar.gz -C /usr/local/bin oc
+          oc version --client
+
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
+        with:
+          version: v4.3.1
+
+      - name: Log in to OpenShift
+        env:
+          OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER }}
+          OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
+        run: |
+          oc login --token="${OPENSHIFT_TOKEN}" --server="${OPENSHIFT_SERVER}" > /dev/null
+          oc project "${NAMESPACE}"
+
+      - name: Deploy (rolls back by itself if the rollout fails)
+        run: >-
+          helm upgrade --install "${RELEASE}" deploy/helm/opsdesk -n "${NAMESPACE}"
+          -f deploy/helm/opsdesk/values-dev.yaml
+          --set image.tag="sha-${GITHUB_SHA::7}"
+          --rollback-on-failure --wait --timeout 6m
+
+      - name: Route URL
+        id: route
+        run: echo "url=https://$(oc get route "${RELEASE}" -n "${NAMESPACE}" -o jsonpath='{.spec.host}')" >> "${GITHUB_OUTPUT}"
+
+      - name: Smoke test (roll back to the previous release on failure)
+        env:
+          URL: ${{ steps.route.outputs.url }}
+        run: |
+          if ! tools/smoke-test.sh "${URL}" 180; then
+            # Roll back unless this is provably the first release (an unknown history still tries the rollback).
+            revisions=$(helm history "${RELEASE}" -n "${NAMESPACE}" -o json | jq length) || revisions=unknown
+            if [[ ${revisions} == 1 ]]; then
+              echo "First release: nothing to roll back to."
+            else
+              helm rollback "${RELEASE}" -n "${NAMESPACE}" --wait
+            fi
+            exit 1
+          fi
+
+      - name: Release status
+        if: always()
+        run: |
+          helm history "${RELEASE}" -n "${NAMESPACE}" --max 5 || true
+          oc get pods -n "${NAMESPACE}" -o wide || true

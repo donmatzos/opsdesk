@@ -1,0 +1,9 @@
+# Dev stage (e.g. Red Hat Developer Sandbox): demo data, in-namespace PostgreSQL, OpenShift Route.
+# CI sets image.tag=sha-<commit>.
+springProfiles: demo
+
+devDatabase:
+  enabled: true
+
+route:
+  enabled: true

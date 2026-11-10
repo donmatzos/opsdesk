@@ -1,0 +1,10 @@
+apiVersion: v2
+name: opsdesk
+description: Service-status and incident desk (Spring Boot + Angular). OpenShift-ready, also runs on plain Kubernetes.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.29.0-0"
+home: https://github.com/donmatzos/opsdesk
+sources:
+  - https://github.com/donmatzos/opsdesk

@@ -1,0 +1,27 @@
+# MOCK: no production cluster exists (see docs/context/cloud-mocks.md). Shows the shape of a prod stage:
+# external PostgreSQL, password from a Secret managed outside Helm (e.g. External Secrets / Vault), autoscaling,
+# a disruption budget and more resources. Never deployed by CI.
+database:
+  url: jdbc:postgresql://postgres.prod.internal:5432/opsdesk
+  existingSecret: opsdesk-db
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 75
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 1Gi
+
+route:
+  enabled: true
+  host: opsdesk.apps.prod.example.com
