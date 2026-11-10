@@ -1,0 +1,52 @@
+# Secure defaults. Stage files (values-dev.yaml, values-prod.yaml) override only what differs.
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: ghcr.io/donmatzos/opsdesk
+  # Empty = .Chart.AppVersion. CI deploys immutable tags: sha-<short commit>.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+# Comma-separated Spring profiles, e.g. "demo" for the demo data. Empty = none.
+springProfiles: ""
+
+database:
+  # JDBC URL of an external PostgreSQL (required unless devDatabase.enabled).
+  url: ""
+  username: opsdesk
+  # Name of an existing Secret with the password; created outside the chart (never in values).
+  existingSecret: ""
+  passwordKey: password
+
+devDatabase:
+  enabled: false
+
+# OpenShift Route with edge TLS (the router terminates TLS, HTTP redirects to HTTPS).
+route:
+  enabled: true
+  host: ""
+
+# Plain Kubernetes alternative to the Route.
+ingress:
+  enabled: false
+  className: ""
+  host: ""
+
+networkPolicy:
+  enabled: true
+  # Namespaces whose pods may reach the app (default: the OpenShift router namespace).
+  ingressNamespaceLabels:
+    policy-group.network.openshift.io/ingress: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 384Mi
+  limits:
+    memory: 768Mi
+
+podAnnotations: {}

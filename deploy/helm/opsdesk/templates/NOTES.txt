@@ -1,0 +1,11 @@
+opsdesk {{ include "opsdesk.image" . }} is deployed as {{ include "opsdesk.fullname" . }} in {{ .Release.Namespace }}.
+{{- if .Values.route.enabled }}
+
+URL: oc get route {{ include "opsdesk.fullname" . }} -n {{ .Release.Namespace }} -o jsonpath='https://{.spec.host}{"\n"}'
+{{- else if .Values.ingress.enabled }}
+
+URL: https://{{ .Values.ingress.host }}
+{{- end }}
+
+Check: tools/smoke-test.sh <url>
+Roll back: helm rollback {{ .Release.Name }} -n {{ .Release.Namespace }}

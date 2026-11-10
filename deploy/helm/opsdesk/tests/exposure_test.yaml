@@ -1,0 +1,36 @@
+suite: exposure (Service, Route, Ingress)
+release:
+  name: opsdesk
+set:
+  database.existingSecret: opsdesk-db
+  database.url: jdbc:postgresql://db:5432/opsdesk
+tests:
+  - it: exposes port 8080 as http
+    template: service.yaml
+    asserts:
+      - contains:
+          path: spec.ports
+          content: { name: http, port: 8080, targetPort: http, protocol: TCP }
+
+  - it: creates an edge-TLS OpenShift Route by default
+    template: route.yaml
+    asserts:
+      - hasDocuments: { count: 1 }
+      - isKind: { of: Route }
+      - equal: { path: spec.to.name, value: opsdesk }
+      - equal: { path: spec.port.targetPort, value: http }
+      - equal: { path: spec.tls.termination, value: edge }
+      - equal: { path: spec.tls.insecureEdgeTerminationPolicy, value: Redirect }
+
+  - it: uses an Ingress instead of a Route on plain Kubernetes
+    set:
+      route.enabled: false
+      ingress.enabled: true
+      ingress.host: opsdesk.example.test
+    asserts:
+      - template: route.yaml
+        hasDocuments: { count: 0 }
+      - template: ingress.yaml
+        hasDocuments: { count: 1 }
+      - template: ingress.yaml
+        equal: { path: "spec.rules[0].host", value: opsdesk.example.test }

@@ -1,0 +1,107 @@
+suite: deployment
+templates:
+  - deployment.yaml
+release:
+  name: opsdesk
+set:
+  database.existingSecret: opsdesk-db
+  database.url: jdbc:postgresql://db:5432/opsdesk
+tests:
+  - it: uses the chart appVersion as the default image tag
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/donmatzos/opsdesk:0.1.0
+
+  - it: uses an explicit image tag
+    set:
+      image.tag: sha-abc1234
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/donmatzos/opsdesk:sha-abc1234
+
+  - it: is compatible with the OpenShift restricted-v2 SCC and the restricted Pod Security level
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: [ALL]
+            seccompProfile:
+              type: RuntimeDefault
+      - notExists:
+          path: spec.template.spec.securityContext.runAsUser
+      - notExists:
+          path: spec.template.spec.securityContext.fsGroup
+      - equal:
+          path: spec.template.spec.automountServiceAccountToken
+          value: false
+
+  - it: gives the read-only container a writable /tmp
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: tmp
+            mountPath: /tmp
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: tmp
+            emptyDir: {}
+
+  - it: probes the actuator health groups
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+          value: { path: /actuator/health/liveness, port: http }
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: { path: /actuator/health/readiness, port: http }
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.httpGet
+          value: { path: /actuator/health/liveness, port: http }
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content: { name: http, containerPort: 8080, protocol: TCP }
+
+  - it: reads the database password from the Secret, never from values
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SPRING_DATASOURCE_PASSWORD
+            valueFrom:
+              secretKeyRef: { name: opsdesk-db, key: password }
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: { name: SPRING_DATASOURCE_URL, value: "jdbc:postgresql://db:5432/opsdesk" }
+
+  - it: sets the Spring profile only when configured
+    set:
+      springProfiles: demo
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: { name: SPRING_PROFILES_ACTIVE, value: demo }
+
+  - it: has resource requests and a memory limit
+    asserts:
+      - isNotEmpty:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+      - isNotEmpty:
+          path: spec.template.spec.containers[0].resources.requests.memory
+      - isNotEmpty:
+          path: spec.template.spec.containers[0].resources.limits.memory
+
+  - it: refuses to render without a database Secret
+    set:
+      database.existingSecret: ""
+      database.url: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: database.existingSecret is required when devDatabase.enabled is false

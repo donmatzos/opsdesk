@@ -1,0 +1,29 @@
+suite: network policy
+templates:
+  - networkpolicy.yaml
+release:
+  name: opsdesk
+set:
+  database.existingSecret: opsdesk-db
+  database.url: jdbc:postgresql://db:5432/opsdesk
+tests:
+  - it: lets the OpenShift router and the own namespace reach the app on 8080 only
+    asserts:
+      - equal: { path: spec.policyTypes, value: [Ingress] }
+      - contains:
+          path: spec.ingress[0].from
+          content:
+            namespaceSelector:
+              matchLabels:
+                policy-group.network.openshift.io/ingress: ""
+      - contains:
+          path: spec.ingress[0].from
+          content:
+            podSelector: {}
+      - equal: { path: "spec.ingress[0].ports", value: [{ port: 8080, protocol: TCP }] }
+
+  - it: can be switched off
+    set:
+      networkPolicy.enabled: false
+    asserts:
+      - hasDocuments: { count: 0 }
