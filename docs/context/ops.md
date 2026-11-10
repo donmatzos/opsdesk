@@ -1,7 +1,7 @@
 # Ops (draft)
 ## CI/CD (real: GitHub Actions)
-Now: `.github/workflows/build.yml` runs `./mvnw verify` on every push and PR (Temurin 25, Docker on the runner for Testcontainers, no secrets). Planned:
-PR: build + tests, Trivy fs scan, Sonar (open question 6), `helm lint`, `terraform validate`, context check. Main: + image to GHCR, Trivy image scan, OpenShift deploy (`oc login` + `helm upgrade --install` + smoke test) only when `OPENSHIFT_SERVER`/`OPENSHIFT_TOKEN` secrets exist, else skipped. Tag: release (jar, image, Helm chart). Reusable workflow via `workflow_call`.
+`ci.yml` on every push and PR to `main`: `verify` (reusable `maven-verify.yml`: `./mvnw verify`, SonarCloud if `SONAR_TOKEN` exists, one JUnit check "Test report" for TestNG + Vitest), `context-check`, `secrets` (gitleaks, full history), `trivy-fs` (npm, secrets, Dockerfile misconfig; `pom.xml` skipped because of Maven Central rate limits), `image` (build, Trivy gate, `tools/ci-smoke.sh` with random UID + read-only FS + per-run DB password, push to `ghcr.io/donmatzos/opsdesk` only from `main` when repo variable `PUBLISH_IMAGE=true`, keep 10 versions). Trivy results go to GitHub code scanning (SARIF). Gates: HIGH/CRITICAL with a fix. Actions pinned by SHA; Dependabot (maven, npm, actions, docker) bumps them. Fork/Dependabot PRs: no secrets, Sonar skipped, report annotate-only, no SARIF upload.
+Later: `helm lint`, `terraform validate`, OpenShift deploy (`oc login` + `helm upgrade --install` + smoke) when `OPENSHIFT_SERVER`/`OPENSHIFT_TOKEN` exist; tag releases (jar, image, chart).
 ## CI templating (mocked: GitLab, Jenkins)
 `ci/gitlab/`: one shared template (stages build/test/scan/package/deploy) included by a consumer that sets only variables (thesis topic). `ci/jenkins/Jenkinsfile`: same stages.
 ## Container (real)

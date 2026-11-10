@@ -3,3 +3,8 @@
 - Stage explicit paths; commit at meaningful points; push the branch.
 - Session end: update `status.md` (state + next step only, no history).
 - Plans/specs go to `docs/plans/` (created with the first plan).
+
+## Secrets
+- Never commit credentials, not even local ones; they live in `deploy/compose/.env` (git-ignored), GitHub Actions secrets, cluster Secrets.
+- Local hook: `pipx install pre-commit && pre-commit install` (gitleaks, `.pre-commit-config.yaml`). CI scans the full history anyway.
+- `gitleaks dir` on the working tree reports `deploy/compose/.env` by design (it holds the real local password, never tracked).
