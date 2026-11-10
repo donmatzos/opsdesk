@@ -80,8 +80,9 @@ class IncidentTools {
                     return all severities.""")
             String severity) {
         return McpResults.run(() -> {
-            Severity wanted = severity == null || severity.isBlank() ? null : parse(Severity.class, severity);
-            if (wanted == null && severity != null && !severity.isBlank()) {
+            boolean filtered = severity != null && !severity.isBlank();
+            Severity wanted = filtered ? parse(Severity.class, severity) : null;
+            if (filtered && wanted == null) {
                 return invalid("severity", severity, SEVERITIES);
             }
             List<Incident> active = Stream.of(IncidentState.OPEN, IncidentState.MITIGATED)

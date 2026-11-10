@@ -147,4 +147,24 @@ public class McpServerTest extends IntegrationTest {
             assertThat(call(mcp, "list_services", Map.of()).isError()).isFalse();
         }
     }
+
+    @Test
+    public void shouldListActiveIncidentsWithoutSeverityFilter() {
+        try (McpSyncClient mcp = McpTestClient.connect(port, token)) {
+            long id = JSON.readTree(text(call(mcp, "open_incident",
+                    Map.of("service_name", "billing-api", "severity", "SEV3", "summary", "unfiltered list"))))
+                    .get("id").asLong();
+
+            var all = call(mcp, "list_active_incidents", Map.of());
+            assertThat(all.isError()).isFalse();
+            assertThat(JSON.readTree(text(all)).get("incidents").valueStream().map(n -> n.get("id").asLong()))
+                    .contains(id);
+
+            // A blank severity is treated as no filter, never a transport error.
+            var blank = call(mcp, "list_active_incidents", Map.of("severity", ""));
+            assertThat(blank.isError()).isFalse();
+            assertThat(JSON.readTree(text(blank)).get("incidents").valueStream().map(n -> n.get("id").asLong()))
+                    .contains(id);
+        }
+    }
 }

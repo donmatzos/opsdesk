@@ -11,6 +11,7 @@ import at.donmatzos.opsdesk.catalog.MonitoredService;
 import at.donmatzos.opsdesk.catalog.MonitoredServiceRepository;
 import at.donmatzos.opsdesk.catalog.ServiceStatus;
 import at.donmatzos.opsdesk.catalog.Stage;
+import at.donmatzos.opsdesk.common.NotFoundException;
 import at.donmatzos.opsdesk.incident.IllegalStateTransitionException;
 import at.donmatzos.opsdesk.incident.Incident;
 import at.donmatzos.opsdesk.incident.IncidentService;
@@ -93,6 +94,16 @@ public class IncidentToolsTest {
 
         assertThat(result.isError()).isTrue();
         assertThat(text(result)).isEqualTo("Unknown service 'nope'. Call list_services to see valid names.");
+    }
+
+    @Test
+    public void shouldExplainUnknownIncident() {
+        when(incidents.get(42L)).thenThrow(new NotFoundException("Incident", 42L));
+
+        CallToolResult result = tools.getIncident(42L);
+
+        assertThat(result.isError()).isTrue();
+        assertThat(text(result)).isEqualTo("Incident 42 not found");
     }
 
     @Test
