@@ -24,12 +24,12 @@
 1. Dependabot and fork PRs have no secrets: the Sonar step must be skipped and the job green (Task 3).
 2. A container started with a random UID and a read-only root filesystem must boot and pass `/actuator/health` (Task 2).
 3. The image must not contain `.env`, `.git`, `target/` caches or `node_modules` from the build context (Task 2).
-4. Pull requests must never push an image; only `push` events on `main` push to GHCR (Task 3).
+4. Pull requests must never push an image; only `push` events on `main` with `PUBLISH_IMAGE=true` push to GHCR (Task 3).
 5. An unfixed CVE must not block, a fixable HIGH/CRITICAL must (Task 3 config; verified by reading the Trivy step output).
 
 ## Prerequisites (owner, can happen in parallel; nothing blocks Tasks 1-2)
 - SonarCloud: sign in with GitHub, import `donmatzos/opsdesk` into organization `donmatzos`, **turn off Automatic Analysis**, create a token, store it as Actions secret `SONAR_TOKEN`.
-- After the first image push: GitHub -> Packages -> `opsdesk` -> visibility public, link to the repo.
+- When ready to publish: repository variable `PUBLISH_IMAGE=true` (Settings -> Secrets and variables -> Actions -> Variables); after the first push set the `opsdesk` package to public (public = free, unlimited).
 
 ---
 
@@ -39,13 +39,13 @@
 - Modify: `pom.xml` (properties `sonar.organization=donmatzos`, `sonar.projectKey=donmatzos_opsdesk`, `sonar.host.url=https://sonarcloud.io`, `skipTests=false`; pluginManagement for `jacoco-maven-plugin` 0.8.16 and `sonar-maven-plugin` 5.8.0.7211)
 - Modify: `backend/pom.xml` (JaCoCo `prepare-agent` + `report` in `verify`; it appends to the existing `@{argLine}`)
 - Modify: `frontend/pom.xml` (`npm-test` execution: `<skip>${skipTests}</skip>`, arguments `run test:ci`; properties `sonar.sources=src`, `sonar.tests=src`, `sonar.test.inclusions=**/*.spec.ts`, `sonar.exclusions=**/*.spec.ts`, `sonar.javascript.lcov.reportPaths=coverage/opsdesk-ui/lcov.info`)
-- Modify: `frontend/package.json` (devDependency `@vitest/coverage-v8` 5.1.0; script `test:ci` = `ng test --watch=false --coverage`), `frontend/angular.json` (test options `coverageReporters: ["lcov", "text-summary"]`)
+- Modify: `frontend/package.json` (devDependency `@vitest/coverage-v8` 5.1.0; script `test:ci` = `ng test --watch=false --coverage`), `frontend/angular.json` (test options `coverageReporters: ["lcov", "text-summary"]`; reporters `default` + `junit` writing `frontend/target/test-reports/vitest-junit.xml`; owner request 2026-11-10: CI report shows backend and frontend tests)
 - Modify: `docs/context/testing.md` (coverage reports and where they land)
 
 **Interfaces:**
-- Produces: `backend/target/site/jacoco/jacoco.xml`, `frontend/coverage/opsdesk-ui/lcov.info` after `./mvnw verify`; `./mvnw -DskipTests package` skips backend and frontend tests (used by the Dockerfile).
+- Produces: `backend/target/site/jacoco/jacoco.xml`, `frontend/coverage/opsdesk-ui/lcov.info`, `backend/target/surefire-reports/TEST-*.xml`, `frontend/target/test-reports/vitest-junit.xml` after `./mvnw verify`; `./mvnw -DskipTests package` skips backend and frontend tests (used by the Dockerfile).
 
-- [ ] **Step 1:** Run `./mvnw -B -ntp verify` then `ls backend/target/site/jacoco/jacoco.xml frontend/coverage/opsdesk-ui/lcov.info`. Expected: both missing (the "failing test" of a config task).
+- [ ] **Step 1:** Run `./mvnw -B -ntp verify` then `ls backend/target/site/jacoco/jacoco.xml frontend/coverage/opsdesk-ui/lcov.info frontend/target/test-reports/vitest-junit.xml`. Expected: both missing (the "failing test" of a config task).
 - [ ] **Step 2:** Apply the POM, package.json and angular.json changes; `npm install` in `frontend/` with the plugin-installed Node (`PATH=$PWD/node:$PATH`) to update the lockfile; approve any new install scripts as in phase 1.
 - [ ] **Step 3:** Run the Step 1 commands. Expected: build green, both files exist, Vitest prints a coverage summary.
 - [ ] **Step 4:** Run `./mvnw -B -ntp -DskipTests package`. Expected: no `Tests run` lines and no Vitest run; `backend/target/opsdesk.jar` exists.
@@ -75,13 +75,13 @@ Dockerfile stages: `build` (`eclipse-temurin:25-jdk-noble`; copy sources; `RUN -
 ### Task 3: DevSecOps pipeline with a reusable Maven workflow
 
 **Files:**
-- Create: `.github/workflows/maven-verify.yml` (`on: workflow_call`, inputs `java-version` (string, default `"25"`), `sonar` (boolean, default `false`); secrets `SONAR_TOKEN` (required: false). Steps: checkout (`fetch-depth: 0` for Sonar blame), setup-java with Maven cache, cache `frontend/node` + `~/.npm`, `./mvnw -B -ntp verify`, then `./mvnw -B -ntp sonar:sonar` only `if: inputs.sonar && env.SONAR_TOKEN != ''` (map the secret to `env.SONAR_TOKEN` at job level), upload test + coverage reports on failure)
+- Create: `.github/workflows/maven-verify.yml` (`on: workflow_call`, inputs `java-version` (string, default `"25"`), `sonar` (boolean, default `false`); secrets `SONAR_TOKEN` (required: false). Steps: checkout (`fetch-depth: 0` for Sonar blame), setup-java with Maven cache, cache `frontend/node` + `~/.npm`, `./mvnw -B -ntp verify`, then `./mvnw -B -ntp sonar:sonar` only `if: inputs.sonar && env.SONAR_TOKEN != ''` (map the secret to `env.SONAR_TOKEN` at job level); `if: always()` publish one combined test report from `backend/target/surefire-reports/TEST-*.xml` and `frontend/target/test-reports/*.xml` with `mikepenz/action-junit-report` (check run + job summary + annotations; needs `checks: write`); upload raw reports on failure)
 - Create: `.github/workflows/ci.yml` replacing `build.yml` (delete it). Triggers: `push` (all branches), `pull_request` to `main`. Jobs:
   - `verify`: `uses: ./.github/workflows/maven-verify.yml` with `sonar: true`, `secrets: inherit`.
   - `context-check`: `python3 tools/context_check.py`.
   - `secrets`: gitleaks via `docker run ghcr.io/gitleaks/gitleaks:v8.30.1 git /repo --redact` on the full history (`fetch-depth: 0`); fails on findings.
   - `trivy-fs`: Trivy `scan-type: fs` (vuln, secret, misconfig) -> SARIF -> `github/codeql-action/upload-sarif` (`security-events: write`), then the same scan as a gate with `format: table`, `exit-code: 1`.
-  - `image` (`needs: [verify, trivy-fs]`, `packages: write`, `security-events: write`): setup-buildx, metadata (`ghcr.io/donmatzos/opsdesk`, tags: `sha`, branch, `latest` on default branch), build with `load: true` and GHA cache, Trivy image scan (SARIF upload + gate), **smoke test**: generate a per-run DB password (`openssl rand -hex 16`, `::add-mask::`, `$GITHUB_ENV`; never a literal), `docker network create`, `docker run postgres:18-alpine` with it, run the built image with `--user 123456:0 --read-only --tmpfs /tmp` on that network, `tools/smoke-test.sh http://localhost:8080`; then login + push **only** `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`. (Service containers are not used: they start before steps and cannot take a generated password.)
+  - `image` (`needs: [verify, trivy-fs]`, `packages: write`, `security-events: write`): setup-buildx, metadata (`ghcr.io/donmatzos/opsdesk`, tags: `sha`, branch, `latest` on default branch), build with `load: true` and GHA cache, Trivy image scan (SARIF upload + gate), **smoke test**: generate a per-run DB password (`openssl rand -hex 16`, `::add-mask::`, `$GITHUB_ENV`; never a literal), `docker network create`, `docker run postgres:18-alpine` with it, run the built image with `--user 123456:0 --read-only --tmpfs /tmp` on that network, `tools/smoke-test.sh http://localhost:8080`; then login + push **only** `if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PUBLISH_IMAGE == 'true'` (owner decision 2026-11-10: publishing is switched on later via the repository variable), followed by `actions/delete-package-versions` keeping the newest 10 versions (same condition). (Service containers are not used: they start before steps and cannot take a generated password.)
 - Create: `.github/dependabot.yml` (ecosystems `maven` `/`, `npm` `/frontend`, `github-actions` `/`, `docker` `/`; weekly; group minor+patch per ecosystem; labels `dependencies`)
 - Create: `.pre-commit-config.yaml` (gitleaks hook `rev: v8.30.1`), section "Secrets" in `docs/context/workflow.md` (install: `pipx install pre-commit && pre-commit install`)
 - Modify: `docs/context/ops.md` (CI section lists jobs; owner prerequisites), `docs/context/status.md`, `README.md` (CI badge, Sonar quality gate badge)
