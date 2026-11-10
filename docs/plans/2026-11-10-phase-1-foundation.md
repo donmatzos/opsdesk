@@ -14,7 +14,7 @@
 - groupId `at.donmatzos.opsdesk`, root package `at.donmatzos.opsdesk`, version `0.1.0-SNAPSHOT`.
 - Backend tests use TestNG only: exclude `org.junit.jupiter:junit-jupiter` from `spring-boot-starter-test`; Surefire must log TestNG as provider.
 - Integration tests extend `IntegrationTest` (Task 1); Docker must be running for `./mvnw verify`.
-- No secrets in files; DB credentials come from env (`SPRING_DATASOURCE_*`), compose uses dev-only defaults `opsdesk/opsdesk`.
+- No secrets in files, not even dev ones: DB credentials come from env (`SPRING_DATASOURCE_*`); compose reads `POSTGRES_PASSWORD` from the git-ignored `deploy/compose/.env`. (Corrected 2026-11-10: the first version of this plan prescribed literal dev defaults, which got committed and had to be scrubbed from the branch history.)
 - Never commit to `main`; branch `feature/foundation`; stage explicit paths.
 - Errors are RFC 9457 `ProblemDetail` JSON (`spring.mvc.problemdetails.enabled: true`).
 
@@ -55,9 +55,9 @@ public void shouldReportHealthUp() {
 }
 ```
 - [ ] **Step 4:** Run `./mvnw -pl backend verify`. Expected: FAIL (no application class).
-- [ ] **Step 5:** Add `OpsdeskApplication` (`@SpringBootApplication`) and `application.yml` (`spring.application.name: opsdesk`, problemdetails enabled, datasource from env with compose defaults `jdbc:postgresql://localhost:5432/opsdesk`).
+- [ ] **Step 5:** Add `OpsdeskApplication` (`@SpringBootApplication`) and `application.yml` (`spring.application.name: opsdesk`, problemdetails enabled, datasource from env, no fallbacks; profile `demo` defaults only URL and user).
 - [ ] **Step 6:** Run `./mvnw -pl backend verify`. Expected: PASS, and the Surefire output shows `TestNG` (if it shows `JUnit Platform` and 0 tests, the exclusion is missing).
-- [ ] **Step 7:** `deploy/compose/compose.yml`: service `postgres` (`postgres:18-alpine`, db/user/password `opsdesk`, port 5432, named volume, `pg_isready` healthcheck). Verify: `docker compose -f deploy/compose/compose.yml up -d` then `docker compose ... ps` shows `healthy`.
+- [ ] **Step 7:** `deploy/compose/compose.yml`: service `postgres` (`postgres:18-alpine`, db/user `opsdesk`, password only via `env_file: .env` (required), port 5432, named volume, `pg_isready` healthcheck). Verify: `docker compose -f deploy/compose/compose.yml up -d` then `docker compose ... ps` shows `healthy`.
 - [ ] **Step 8: Commit** `build: add maven multi-module skeleton with testng and testcontainers`.
 
 ### Task 2: Service catalog

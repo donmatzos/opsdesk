@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: opsdesk
+  mvc:
+    problemdetails:
+      enabled: true
+  # No fallbacks on purpose: a stage without SPRING_DATASOURCE_* (from a Secret) fails fast.
+  # Never put a password in this file, not even a local one.
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+---
+# Demo data for local runs, tests and the showcase; never active in a real stage.
+spring:
+  config:
+    activate:
+      on-profile: demo
+  flyway:
+    locations: classpath:db/migration,classpath:db/demo
+  # Host and user match deploy/compose/compose.yml; the password always comes from SPRING_DATASOURCE_PASSWORD.
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/opsdesk}
+    username: ${SPRING_DATASOURCE_USERNAME:opsdesk}

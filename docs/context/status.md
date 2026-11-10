@@ -2,9 +2,8 @@
 Last updated: 2026-11-10.
 
 ## Where we are
-Skeleton + context files; decisions in `docs/adr/0001-initial-decisions.md`; roadmap `docs/plans/2026-11-10-roadmap.md`; detailed plan for phase 1 `docs/plans/2026-11-10-phase-1-foundation.md`. No code, no git history yet.
+Phase 1 (`feature/foundation`) implemented: Maven multi-module (`frontend`, `backend`), one `opsdesk.jar` with Angular inside; service catalog + incident lifecycle REST API on PostgreSQL (Flyway, demo data in profile `demo`); TestNG + Mockito + Testcontainers (34 backend tests), Vitest (2 frontend tests). Final review done; review fixes: optimistic locking on incidents, generic 500 ProblemDetail, no credentials anywhere in config (branch history rewritten 2026-11-10 to remove a committed local DB password; `main` still has the old phase-1 plan text naming it). CI: `build.yml` (build + test). Branch pushed, PR #1 open, not merged.
 
 ## Next up
-1. Owner: review the plans; create GitHub repo `donmatzos/opsdesk`, push the skeleton as the initial `main` commit.
-2. Execute phase 1 on `feature/foundation`.
-3. Owner: decide frontend scope (`open-questions.md`) before phase 7.
+1. Owner reviews and merges `feature/foundation`.
+2. Phase 2 `feature/ci-container` (roadmap `docs/plans/2026-11-10-roadmap.md`): write its plan first.

@@ -1,5 +1,6 @@
 # Ops (draft)
 ## CI/CD (real: GitHub Actions)
+Now: `.github/workflows/build.yml` runs `./mvnw verify` on every push and PR (Temurin 25, Docker on the runner for Testcontainers, no secrets). Planned:
 PR: build + tests, Trivy fs scan, Sonar (open question 6), `helm lint`, `terraform validate`, context check. Main: + image to GHCR, Trivy image scan, OpenShift deploy (`oc login` + `helm upgrade --install` + smoke test) only when `OPENSHIFT_SERVER`/`OPENSHIFT_TOKEN` secrets exist, else skipped. Tag: release (jar, image, Helm chart). Reusable workflow via `workflow_call`.
 ## CI templating (mocked: GitLab, Jenkins)
 `ci/gitlab/`: one shared template (stages build/test/scan/package/deploy) included by a consumer that sets only variables (thesis topic). `ci/jenkins/Jenkinsfile`: same stages.
