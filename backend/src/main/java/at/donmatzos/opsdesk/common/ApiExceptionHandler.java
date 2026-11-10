@@ -1,7 +1,5 @@
 package at.donmatzos.opsdesk.common;
 
-import at.donmatzos.opsdesk.incident.IllegalStateTransitionException;
-import at.donmatzos.opsdesk.incident.UnknownServiceException;
 import java.util.Map;
 import java.util.TreeMap;
 import org.jspecify.annotations.Nullable;
@@ -29,13 +27,13 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
-    @ExceptionHandler(IllegalStateTransitionException.class)
-    ProblemDetail conflict(IllegalStateTransitionException e) {
+    @ExceptionHandler(ConflictException.class)
+    ProblemDetail conflict(ConflictException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
     }
 
-    @ExceptionHandler(UnknownServiceException.class)
-    ProblemDetail unprocessable(UnknownServiceException e) {
+    @ExceptionHandler(UnprocessableException.class)
+    ProblemDetail unprocessable(UnprocessableException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_CONTENT, e.getMessage());
     }
 

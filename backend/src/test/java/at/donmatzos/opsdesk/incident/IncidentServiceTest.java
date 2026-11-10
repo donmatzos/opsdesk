@@ -48,7 +48,7 @@ public class IncidentServiceTest {
     }
 
     @Test(expectedExceptions = UnknownServiceException.class)
-    public void shouldNotSaveIncidentForUnknownService() {
+    public void shouldNotSaveWhenServiceIsUnknown() {
         when(services.existsById(9L)).thenReturn(false);
         try {
             service.open(new CreateIncidentRequest(9L, Severity.SEV3, "x"));
@@ -66,7 +66,7 @@ public class IncidentServiceTest {
     }
 
     @Test(expectedExceptions = NotFoundException.class, expectedExceptionsMessageRegExp = "Incident 5 not found")
-    public void shouldFailForUnknownIncident() {
+    public void shouldFailWhenIncidentIsUnknown() {
         when(incidents.findById(5L)).thenReturn(Optional.empty());
         service.changeState(5L, IncidentState.RESOLVED);
     }

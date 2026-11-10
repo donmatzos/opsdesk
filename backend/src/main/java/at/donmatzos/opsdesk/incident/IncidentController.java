@@ -1,7 +1,6 @@
 package at.donmatzos.opsdesk.incident;
 
 import jakarta.validation.Valid;
-import java.net.URI;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/incidents")
@@ -25,23 +25,25 @@ class IncidentController {
     }
 
     @PostMapping
-    ResponseEntity<Incident> open(@Valid @RequestBody CreateIncidentRequest request) {
+    ResponseEntity<IncidentResponse> open(@Valid @RequestBody CreateIncidentRequest request) {
         Incident created = service.open(request);
-        return ResponseEntity.created(URI.create("/api/incidents/" + created.id())).body(created);
+        var location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}").buildAndExpand(created.id()).toUri();
+        return ResponseEntity.created(location).body(IncidentResponse.from(created));
     }
 
     @GetMapping
-    List<Incident> list(@RequestParam(required = false) @Nullable IncidentState state) {
-        return service.list(state);
+    List<IncidentResponse> list(@RequestParam(required = false) @Nullable IncidentState state) {
+        return service.list(state).stream().map(IncidentResponse::from).toList();
     }
 
     @GetMapping("/{id}")
-    Incident get(@PathVariable long id) {
-        return service.get(id);
+    IncidentResponse get(@PathVariable long id) {
+        return IncidentResponse.from(service.get(id));
     }
 
     @PatchMapping("/{id}")
-    Incident changeState(@PathVariable long id, @Valid @RequestBody ChangeStateRequest request) {
-        return service.changeState(id, request.state());
+    IncidentResponse changeState(@PathVariable long id, @Valid @RequestBody ChangeStateRequest request) {
+        return IncidentResponse.from(service.changeState(id, request.state()));
     }
 }

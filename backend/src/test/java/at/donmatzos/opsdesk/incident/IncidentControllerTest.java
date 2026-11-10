@@ -32,27 +32,27 @@ public class IncidentControllerTest extends AbstractTestNGSpringContextTests {
     }
 
     @Test
-    public void shouldReturn400ForUnknownSeverity() {
+    public void shouldReturn400WhenSeverityIsUnknown() {
         assertThat(post("{\"serviceId\":1,\"severity\":\"SEV9\",\"summary\":\"x\"}"))
                 .hasStatus(400).hasContentType(PROBLEM_JSON);
     }
 
     @Test
-    public void shouldReturn400ForBlankSummary() {
+    public void shouldReturn400WhenSummaryIsBlank() {
         assertThat(post("{\"serviceId\":1,\"severity\":\"SEV2\",\"summary\":\" \"}"))
                 .hasStatus(400).hasContentType(PROBLEM_JSON)
                 .bodyJson().extractingPath("$.errors.summary").isNotNull();
     }
 
     @Test
-    public void shouldReturn400ForSummaryOver200Chars() {
+    public void shouldReturn400WhenSummaryExceeds200Chars() {
         assertThat(post("{\"serviceId\":1,\"severity\":\"SEV2\",\"summary\":\"" + "x".repeat(201) + "\"}"))
                 .hasStatus(400).hasContentType(PROBLEM_JSON)
                 .bodyJson().extractingPath("$.errors.summary").isNotNull();
     }
 
     @Test
-    public void shouldReturn400ForUnknownStateFilter() {
+    public void shouldReturn400WhenStateFilterIsUnknown() {
         assertThat(mvc.get().uri("/api/incidents?state=foo").exchange())
                 .hasStatus(400).hasContentType(PROBLEM_JSON);
     }
@@ -81,7 +81,7 @@ public class IncidentControllerTest extends AbstractTestNGSpringContextTests {
     }
 
     @Test
-    public void shouldReturnGeneric500ProblemWithoutInternalDetails() {
+    public void shouldHideInternalDetailsWhenUnexpectedErrorOccurs() {
         when(service.list(any())).thenThrow(new IllegalStateException("connection to db-secret-host failed"));
 
         MvcTestResult result = mvc.get().uri("/api/incidents").exchange();
@@ -90,7 +90,7 @@ public class IncidentControllerTest extends AbstractTestNGSpringContextTests {
     }
 
     @Test
-    public void shouldReturn422ForUnknownService() {
+    public void shouldReturn422WhenServiceIsUnknown() {
         when(service.open(any())).thenThrow(new UnknownServiceException(42L));
 
         assertThat(post("{\"serviceId\":42,\"severity\":\"SEV2\",\"summary\":\"x\"}"))
