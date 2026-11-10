@@ -35,6 +35,11 @@ devDatabase:
     limits:
       memory: 512Mi
 
+service:
+  # ClusterIP behind the Route/Ingress; NodePort only for local clusters (tools/kind-verify.sh).
+  type: ClusterIP
+  nodePort: null
+
 # OpenShift Route with edge TLS (the router terminates TLS, HTTP redirects to HTTPS).
 route:
   enabled: true

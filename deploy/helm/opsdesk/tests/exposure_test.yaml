@@ -12,6 +12,15 @@ tests:
           path: spec.ports
           content: { name: http, port: 8080, targetPort: http, protocol: TCP }
 
+  - it: can expose the app as a NodePort (local clusters)
+    template: service.yaml
+    set:
+      service.type: NodePort
+      service.nodePort: 30080
+    asserts:
+      - equal: { path: spec.type, value: NodePort }
+      - equal: { path: "spec.ports[0].nodePort", value: 30080 }
+
   - it: creates an edge-TLS OpenShift Route by default
     template: route.yaml
     asserts:

@@ -7,3 +7,4 @@
 - Context: `python3 tools/context_check.py`.
 - Reports after `./mvnw verify`: backend JUnit XML `backend/target/surefire-reports/TEST-*.xml`, coverage `backend/target/site/jacoco/jacoco.xml`; frontend JUnit XML `frontend/target/test-reports/vitest-junit.xml`, coverage `frontend/coverage/opsdesk-ui/lcov.info`. CI publishes both JUnit reports as one check; SonarCloud reads both coverage files.
 - `-DskipTests` skips backend and frontend tests (used by the Docker build).
+- Helm chart: `tools/helm-check.sh` (Docker only: `helm lint` per values file, helm-unittest in `deploy/helm/opsdesk/tests/`, kubeconform incl. the OpenShift Route schema). Local cluster check: `docker build -t opsdesk:dev . && tools/kind-verify.sh` (kind, restricted Pod Security, install + upgrade + smoke, DB password kept; `KEEP_CLUSTER=1` keeps a failed cluster). kind is local only; CI deploys to OpenShift.

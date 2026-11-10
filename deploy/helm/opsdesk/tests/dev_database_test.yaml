@@ -28,6 +28,22 @@ tests:
       - documentIndex: 1
         isKind: { of: Service }
 
+  # sclorg writes /var/lib/pgsql/passwd (nss_wrapper for the random UID): the home dir must be writable
+  # while the root filesystem stays read-only.
+  - it: gives PostgreSQL a writable home next to its data volume
+    template: dev-database.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content: { name: home, mountPath: /var/lib/pgsql }
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content: { name: data, mountPath: /var/lib/pgsql/data }
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+
   - it: renders nothing for the database when disabled
     template: dev-database.yaml
     set:

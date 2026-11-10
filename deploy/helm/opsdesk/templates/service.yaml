@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "opsdesk.labels" . | nindent 4 }}
 spec:
-  type: ClusterIP
+  type: {{ .Values.service.type }}
   selector:
     {{- include "opsdesk.appSelectorLabels" . | nindent 4 }}
   ports:
@@ -13,3 +13,6 @@ spec:
       port: 8080
       targetPort: http
       protocol: TCP
+      {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePort }}
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
