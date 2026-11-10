@@ -19,6 +19,7 @@
     <description>Service-status and incident desk: Spring Boot + Angular in one jar, with an MCP server.</description>
 
     <modules>
+        <module>frontend</module>
         <module>backend</module>
     </modules>
 
@@ -31,6 +32,11 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>at.donmatzos.opsdesk</groupId>
+                <artifactId>frontend</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.testng</groupId>
                 <artifactId>testng</artifactId>
