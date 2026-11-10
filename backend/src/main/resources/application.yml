@@ -32,6 +32,23 @@ management:
   metrics:
     tags:
       application: opsdesk
+  tracing:
+    sampling:
+      probability: 1.0
+
+# Structured logs: the container image sets LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs (Elastic Common Schema);
+# a local java -jar stays human-readable.
+logging:
+  structured:
+    ecs:
+      service:
+        name: opsdesk
+        environment: ${OPSDESK_ENV:local}
+    json:
+      # Micrometer puts traceId/spanId into the MDC; ECS names them trace.id/span.id (Kibana/APM correlation).
+      rename:
+        traceId: trace.id
+        spanId: span.id
 
 ---
 # Demo data for local runs, tests and the showcase; never active in a real stage.

@@ -6,12 +6,16 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class IncidentService {
+
+    private static final Logger log = LoggerFactory.getLogger(IncidentService.class);
 
     private final IncidentRepository incidents;
     private final MonitoredServiceRepository services;
@@ -35,6 +39,12 @@ public class IncidentService {
         Incident opened = incidents.save(
                 Incident.open(request.serviceId(), request.severity(), request.summary(), clock.instant()));
         events.publishEvent(new IncidentOpened(opened.id(), opened.severity()));
+        // Key-value pairs become ECS fields (incident.id, ...), so Kibana can filter on them.
+        log.atInfo().setMessage("Incident opened")
+                .addKeyValue("incident.id", opened.id())
+                .addKeyValue("incident.severity", opened.severity())
+                .addKeyValue("incident.service_id", opened.serviceId())
+                .log();
         return opened;
     }
 
@@ -55,6 +65,12 @@ public class IncidentService {
         Incident changed = incidents.save(current.transitionTo(next, now));
         events.publishEvent(new IncidentStateChanged(changed.id(), changed.severity(), current.state(), next,
                 current.openedAt(), now));
+        log.atInfo().setMessage("Incident state changed")
+                .addKeyValue("incident.id", changed.id())
+                .addKeyValue("incident.severity", changed.severity())
+                .addKeyValue("incident.from", current.state())
+                .addKeyValue("incident.to", next)
+                .log();
         return changed;
     }
 }
