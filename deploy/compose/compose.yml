@@ -21,5 +21,21 @@ services:
       timeout: 3s
       retries: 10
 
+  # Full stack from the Dockerfile: docker compose -f deploy/compose/compose.yml --profile app up --build
+  app:
+    profiles: [app]
+    build: ../..
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/opsdesk
+    ports:
+      - "8080:8080"
+
 volumes:
   postgres-data:
