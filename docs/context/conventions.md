@@ -1,0 +1,8 @@
+# Conventions (draft)
+- Java 25: records for DTOs, sealed types where useful, no Lombok. Constructor injection only.
+- Packages by feature (`incident`, `service`), not by layer.
+- Config via `application.yml` + env vars; never a secret in a file.
+- Mocked cloud code: header comment `// MOCK: <real thing> — <why mocked>, see docs/context/cloud-mocks.md`.
+- TypeScript: strict mode, standalone components, signals; no `any`.
+- YAML/Helm/Terraform: formatted (`helm lint`, `terraform fmt`).
+- Comments explain why, not what. Small, reviewable commits.
