@@ -9,3 +9,12 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/opsdesk}
     username: ${SPRING_DATASOURCE_USERNAME:opsdesk}
     password: ${SPRING_DATASOURCE_PASSWORD}
+
+---
+# Demo data for local runs, tests and the showcase; never active in a real stage.
+spring:
+  config:
+    activate:
+      on-profile: demo
+  flyway:
+    locations: classpath:db/migration,classpath:db/demo
