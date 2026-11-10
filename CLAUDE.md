@@ -8,7 +8,7 @@ Goal: a small, public showcase project for recruiters. A service-status and inci
 ## Hard rules
 - Never commit to `main`. Branches: `feature/|fix/|update/<kebab-name>`. Stage explicit paths only. No PR/merge unless asked.
 - No real cloud access exists. Azure, OpenShift, Datadog, Artifactory parts are **mocked or disabled by default** and must say so in a comment. Rules: `docs/context/cloud-mocks.md`.
-- **No secrets in the repo, ever** — not even local/dev passwords or fake-looking ones (no `${X:password}` fallbacks, no literal values in compose, YAML, docs or plans). Passwords come from env vars: local `deploy/compose/.env` (git-ignored, template `.env.example`), CI from GitHub Actions secrets, clusters from Secrets. Check `git diff --cached` for credentials before every commit.
+- **No secrets in the repo, ever** — not even local/dev passwords or fake-looking ones (no `${X:password}` fallbacks, no literal values in compose, YAML, docs or plans). Passwords come from env vars: local `deploy/compose/.env` (git-ignored, template `.env.example`), CI from GitHub Actions secrets, clusters from Secrets. Check `git diff --cached` for credentials before every commit; `pre-commit install` adds a gitleaks hook.
 - `./mvnw verify` must be green before each commit. Backend tests: TestNG + Mockito (no JUnit).
 - Every context file stays <= 100 lines and 6 KB (`python3 tools/context_check.py`). Update `status.md` at the end of a work session.
 
@@ -26,4 +26,4 @@ Goal: a small, public showcase project for recruiters. A service-status and inci
 | Plan or next phase | `status.md`, `open-questions.md`, `docs/plans/` (current phase only) |
 
 ## Commands
-`./mvnw verify` (all modules; needs Docker for Testcontainers) · `cp deploy/compose/.env.example deploy/compose/.env` + set a password, then `docker compose -f deploy/compose/compose.yml up -d` (Postgres) · `SPRING_PROFILES_ACTIVE=demo SPRING_DATASOURCE_PASSWORD=<same> java -jar backend/target/opsdesk.jar` (UI + API on :8080). Frontend dev: `cd frontend && npx ng serve` (proxy to :8080). Details: `docs/context/testing.md`.
+`./mvnw verify` (all modules; needs Docker for Testcontainers) · `cp deploy/compose/.env.example deploy/compose/.env` + set a password, then `docker compose -f deploy/compose/compose.yml up -d` (Postgres) · `set -a; . deploy/compose/.env; set +a; SPRING_PROFILES_ACTIVE=demo java -jar backend/target/opsdesk.jar` (UI + API on :8080) · full stack in Docker: `docker compose -f deploy/compose/compose.yml --profile app up --build`, then `tools/smoke-test.sh http://localhost:8080`. Frontend dev: `cd frontend && npx ng serve` (proxy to :8080). Details: `docs/context/testing.md`.
