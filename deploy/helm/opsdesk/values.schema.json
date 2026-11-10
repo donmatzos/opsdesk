@@ -188,6 +188,22 @@
           "maximum": 32767
         }
       }
+    },
+    "datadog": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "env": {
+          "type": "string",
+          "minLength": 1
+        },
+        "apiKeySecret": {
+          "type": "string"
+        }
+      }
     }
   }
 }

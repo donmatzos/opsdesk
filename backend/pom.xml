@@ -52,6 +52,11 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
+        <!-- MOCK: Datadog registry, active only with profile "datadog" (no account; see cloud-mocks.md) -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-datadog</artifactId>
+        </dependency>
         <!-- Tracing for log correlation (trace.id/span.id in every log line). Deliberately no exporter
              (spring-boot-starter-opentelemetry would add OTLP exporters that push to localhost:4318). -->
         <dependency>

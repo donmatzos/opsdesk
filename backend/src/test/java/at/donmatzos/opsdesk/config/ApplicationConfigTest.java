@@ -31,4 +31,24 @@ public class ApplicationConfigTest {
             assertNull(document.getProperty("spring.datasource.password"), document.getName());
         }
     }
+
+    @Test
+    public void shouldDisableDatadogByDefault() throws IOException {
+        PropertySource<?> defaults = load().getFirst();
+        assertEquals(String.valueOf(defaults.getProperty("management.datadog.metrics.export.enabled")), "false");
+    }
+
+    @Test
+    public void shouldTakeTheDatadogKeyOnlyFromTheEnvironment() throws IOException {
+        PropertySource<?> datadog = load().stream()
+                .filter(d -> "datadog".equals(d.getProperty("spring.config.activate.on-profile")))
+                .findFirst().orElseThrow();
+        assertEquals(String.valueOf(datadog.getProperty("management.datadog.metrics.export.api-key")),
+                "${DATADOG_API_KEY}");
+        assertEquals(String.valueOf(datadog.getProperty("management.datadog.metrics.export.enabled")), "true");
+    }
+
+    private static List<PropertySource<?>> load() throws IOException {
+        return new YamlPropertySourceLoader().load("application", new ClassPathResource("application.yml"));
+    }
 }

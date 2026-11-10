@@ -6,6 +6,7 @@ metadata:
   name: {{ include "opsdesk.fullname" . }}
   labels:
     {{- include "opsdesk.labels" . | nindent 4 }}
+    {{- include "opsdesk.datadogLabels" . | nindent 4 }}
 spec:
   {{- if not (.Values.autoscaling).enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -23,9 +24,15 @@ spec:
     metadata:
       labels:
         {{- include "opsdesk.appSelectorLabels" . | nindent 8 }}
-      {{- with .Values.podAnnotations }}
+        {{- include "opsdesk.datadogLabels" . | nindent 8 }}
+      {{- if or .Values.podAnnotations .Values.datadog.enabled }}
       annotations:
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.datadog.enabled }}
+        ad.datadoghq.com/opsdesk.logs: '[{"source":"java","service":"opsdesk"}]'
+        {{- end }}
       {{- end }}
     spec:
       serviceAccountName: {{ include "opsdesk.fullname" . }}
@@ -72,9 +79,27 @@ spec:
                 secretKeyRef:
                   name: {{ $dbSecret }}
                   key: {{ .Values.database.passwordKey }}
-            {{- with .Values.springProfiles }}
+            {{- with include "opsdesk.springProfiles" . }}
             - name: SPRING_PROFILES_ACTIVE
               value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.datadog.enabled }}
+            # MOCK: Datadog (no account). Key from an existing Secret; agent on the node for traces/DogStatsD.
+            - name: DATADOG_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "datadog.apiKeySecret is required when datadog.enabled (Secret with key api-key)" .Values.datadog.apiKeySecret }}
+                  key: api-key
+            - name: DD_ENV
+              value: {{ .Values.datadog.env | quote }}
+            - name: DD_SERVICE
+              value: {{ include "opsdesk.name" . | quote }}
+            - name: DD_VERSION
+              value: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
             {{- end }}
           lifecycle:
             # Endpoints and the router still send traffic briefly after SIGTERM: drain first, then shut down

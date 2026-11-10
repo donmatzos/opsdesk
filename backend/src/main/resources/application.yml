@@ -32,6 +32,11 @@ management:
   metrics:
     tags:
       application: opsdesk
+  # MOCK: Datadog export is off; profile "datadog" below switches it on (key from the environment only).
+  datadog:
+    metrics:
+      export:
+        enabled: false
   tracing:
     sampling:
       probability: 1.0
@@ -62,3 +67,19 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/opsdesk}
     username: ${SPRING_DATASOURCE_USERNAME:opsdesk}
+
+---
+# MOCK: no Datadog account exists. Shows how metrics would be pushed to Datadog: the API key comes only from the
+# environment (DATADOG_API_KEY, never a default); DatadogKeyCheck stops the start when it is missing.
+spring:
+  config:
+    activate:
+      on-profile: datadog
+management:
+  datadog:
+    metrics:
+      export:
+        enabled: true
+        api-key: ${DATADOG_API_KEY}
+        uri: ${DATADOG_SITE_URI:https://api.datadoghq.eu}
+        step: 30s

@@ -79,4 +79,12 @@ podDisruptionBudget:
   enabled: false
   minAvailable: 1
 
+# MOCK: no Datadog account. Unified Service Tagging (env/service/version), agent host for traces/DogStatsD and
+# log autodiscovery for a cluster with the Datadog agent; also switches on the app's "datadog" metrics profile.
+datadog:
+  enabled: false
+  env: dev
+  # Existing Secret with key "api-key" (required when enabled); created outside the chart.
+  apiKeySecret: ""
+
 podAnnotations: {}
