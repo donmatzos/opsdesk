@@ -14,7 +14,10 @@ RUN --mount=type=cache,target=/root/.m2 \
 FROM eclipse-temurin:25-jre-ubi10-minimal AS extract
 WORKDIR /extract
 COPY --from=build /src/backend/target/opsdesk.jar .
-RUN java -Djarmode=tools -jar opsdesk.jar extract --layers --destination layers
+RUN java -Djarmode=tools -jar opsdesk.jar extract --layers --destination layers \
+ # Group 0 gets the owner's rights here, so the runtime stage needs no RUN (a chmod there would copy every file
+ # into one more layer). OpenShift runs with a random UID that is always in group 0.
+ && chmod -R g=u layers
 
 FROM eclipse-temurin:25-jre-ubi10-minimal
 LABEL org.opencontainers.image.title="opsdesk" \
@@ -25,8 +28,6 @@ COPY --from=extract --chown=1001:0 /extract/layers/dependencies/ ./
 COPY --from=extract --chown=1001:0 /extract/layers/spring-boot-loader/ ./
 COPY --from=extract --chown=1001:0 /extract/layers/snapshot-dependencies/ ./
 COPY --from=extract --chown=1001:0 /extract/layers/application/ ./
-# Group 0 gets the owner's rights: OpenShift runs with a random UID that is always in group 0.
-RUN chmod -R g=u /app
 USER 1001
 EXPOSE 8080
 ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"

@@ -16,7 +16,12 @@ docker network create smoke >/dev/null
 docker run -d --name smoke-db --network smoke \
   -e POSTGRES_DB=opsdesk -e POSTGRES_USER=opsdesk -e POSTGRES_PASSWORD="${db_secret}" \
   postgres:18-alpine >/dev/null
-until docker exec smoke-db pg_isready -U opsdesk -d opsdesk >/dev/null 2>&1; do sleep 1; done
+# Over TCP: the unix socket already answers while the entrypoint's temporary init server is still running.
+deadline=$((SECONDS + 60))
+until docker exec smoke-db pg_isready -h 127.0.0.1 -U opsdesk -d opsdesk >/dev/null 2>&1; do
+  (( SECONDS < deadline )) || { echo "postgres not ready after 60 s" >&2; docker logs smoke-db | tail -20; exit 1; }
+  sleep 1
+done
 
 docker run -d --name smoke-app --network smoke -p 8080:8080 \
   --user 123456:0 --read-only --tmpfs /tmp \

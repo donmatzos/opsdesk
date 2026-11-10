@@ -13,7 +13,8 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel a main run: it may be pushing or cleaning up the registry.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
   IMAGE: ghcr.io/${{ github.repository }}
@@ -89,16 +90,13 @@ jobs:
           skip-setup-trivy: true
 
   image:
-    name: Image (build, scan, smoke test, publish)
+    name: Image (build, scan, smoke test)
     needs: [verify, trivy-fs]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
       security-events: write
-      packages: write
-    env:
-      PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PUBLISH_IMAGE == 'true' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -151,26 +149,53 @@ jobs:
       - name: Smoke test (random UID, read-only root FS, throwaway PostgreSQL)
         run: tools/ci-smoke.sh opsdesk:ci
 
+  publish:
+    name: Publish image to GHCR
+    # Only main, only when switched on, and only after every check (incl. the secret scan) is green.
+    # The only job with packages: write; no branch or PR code runs with it.
+    needs: [image, secrets, context-check]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PUBLISH_IMAGE == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=sha
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
       - name: Log in to GHCR
-        if: env.PUBLISH == 'true'
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Rebuilt from the GHA layer cache of the image job (same layers as scanned and smoke-tested).
+      # provenance/sbom off: one registry version per push, so the cleanup below counts pushes.
       - name: Push
-        if: env.PUBLISH == 'true'
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           push: true
+          provenance: false
+          sbom: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
 
       - name: Keep only the newest 10 image versions
-        if: env.PUBLISH == 'true'
         uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
         with:
           package-name: ${{ github.event.repository.name }}
