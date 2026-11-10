@@ -14,6 +14,14 @@
     <name>opsdesk frontend</name>
     <description>Angular app; the build output lands in META-INF/resources, which Spring Boot serves as static content.</description>
 
+    <properties>
+        <sonar.sources>src</sonar.sources>
+        <sonar.tests>src</sonar.tests>
+        <sonar.exclusions>**/*.spec.ts</sonar.exclusions>
+        <sonar.test.inclusions>**/*.spec.ts</sonar.test.inclusions>
+        <sonar.javascript.lcov.reportPaths>coverage/opsdesk-ui/lcov.info</sonar.javascript.lcov.reportPaths>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -51,13 +59,15 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <!-- Vitest with coverage (lcov) and a JUnit report for CI; -DskipTests skips it too -->
                         <id>npm-test</id>
                         <phase>test</phase>
                         <goals>
                             <goal>npm</goal>
                         </goals>
                         <configuration>
-                            <arguments>test -- --watch=false</arguments>
+                            <arguments>run test:ci</arguments>
+                            <skip>${skipTests}</skip>
                         </configuration>
                     </execution>
                 </executions>
