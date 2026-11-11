@@ -1,5 +1,5 @@
 # Status (current state and next step only)
-Last updated: 2026-11-11 (UI rework merged, Sonar fixes pending in `fix/sonar-ui-rework`).
+Last updated: 2026-11-11 (phase 8 implemented on `update/templates-and-polish`, PR pending).
 
 ## Where we are
 Phase 1 merged (PR #1, #2): one `opsdesk.jar` (Angular + Spring Boot), catalog + incident API on PostgreSQL, 41 TestNG/Mockito/Testcontainers tests, 2 Vitest tests. History note: the branch history was rewritten on 2026-11-10 to remove a committed local DB password; `main` still has the old phase-1 plan text naming it.
@@ -19,8 +19,11 @@ Sonar cleanup merged (PR #15). `/api/assist` is open and unthrottled on purpose:
 
 Phase 7 merged (PR #16): accessible Angular UI, project guide with 31 sourced glossary terms, static demo with an in-browser API mock, `pages.yml` (build, axe check, deploy gated by `PAGES_DEPLOY`). Three docs.redhat.com glossary links answer 403 to bots and are unverified.
 
-UI rework merged (PR #17; plan `docs/plans/2026-11-11-ui-rework.md`): after owner screenshot review, palette Indigo, System/Light/Dark toggle, sticky shell with a full-height sidebar (the reported bug, now measured by `tools/pages-a11y.sh`), phone drawer, new Overview landing page, pill/tag badges, list-first incidents with chips and card tables, formatted assist answers, guide "On this page" rail and glossary cards. Analysis and decisions: `docs/guide/design.md`. Checked locally: `./mvnw verify` (109 Vitest specs, 42 `ai`, 125 backend tests), 48 built-site checks, contrast check, guide check. Not checked: the Pages deploy itself. The Sonar fixes for the rework (0 open issues on the branch) are in `fix/sonar-ui-rework`, not yet merged.
+UI rework merged (PR #17, Sonar fixes PR #18): palette Indigo, System/Light/Dark toggle, sticky shell, Overview page, list-first incidents, formatted assist answers; layout regressions are guarded by `tools/pages-a11y.sh`. Details: `docs/guide/design.md`.
+
+Phase 8 implemented (branch `update/templates-and-polish`, not merged): Artifactory Maven profile, GitLab shared template + consumer, Jenkinsfile, Ansible deploy playbook, AWX job templates (Terraform), `release.yml` + `tools/release-check.sh`, runbooks (`deploy-rollback`, `secret-exposure`, postmortem template) and a blameless postmortem, `ops-check` skill + `apm.yml` with a pinned lockfile, README with architecture diagram, skills table and mock inventory, `tools/docs_check.py`. All mocks are validated by CI job `templates` and checked locally (`tools/ci-templates-check.sh all`, actionlint, terraform fmt/validate/tflint, `./mvnw verify`). Not checked: the release workflow itself (no tag yet), GitLab/Jenkins/AWX runs, `apm install` in this repo (validated in a scratch copy), the live Pages deploy.
 
 ## Next up
-1. Merge `fix/sonar-ui-rework`, then switch on Pages ( Settings -> Pages -> Source "GitHub Actions", repository variable `PAGES_DEPLOY=true`; demo URL `https://donmatzos.github.io/opsdesk/`).
-2. Phase 8 `update/templates-and-polish` (plan `docs/plans/2026-11-10-phase-8-templates-and-polish.md`, open questions inside).
+1. Merge phase 8. Re-run the `pages` workflow (Actions -> pages -> Run workflow) or merge to `main`: the earlier runs predate `PAGES_DEPLOY=true`, so the demo is not live yet; the README links its URL.
+2. First release: a version PR sets `0.1.0` in `pom.xml` and the chart (already `0.1.0`), the owner tags `v0.1.0`; the next PR bumps the pom to the next SNAPSHOT.
+3. Open: `/api/assist` is open and unthrottled (close/throttle before real Azure use).
