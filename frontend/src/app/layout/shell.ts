@@ -1,12 +1,15 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, Injector, afterNextRender, inject, signal, viewChild } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { Icon } from '../shared/icon';
-import { ThemeToggle } from './theme-toggle';
 import { FocusOnNavigate } from './focus-on-navigate';
 import { NAV_GROUPS } from './nav-items';
+import { ThemeToggle } from './theme-toggle';
 
-/** Landmarks, skip link, navigation (sidebar from 1024 px, disclosure menu below) and the focusable <main>. */
+/**
+ * Landmarks, skip link, sticky header with the theme toggle, a sticky full-height sidebar from 1024 px, and an
+ * off-canvas drawer below (scrim, Escape, closes on navigation, <main> inert while open).
+ */
 @Component({
   selector: 'app-shell',
   imports: [RouterLink, RouterLinkActive, RouterOutlet, Icon, ThemeToggle],
@@ -15,6 +18,9 @@ import { NAV_GROUPS } from './nav-items';
 })
 export class Shell {
   private readonly focus = inject(FocusOnNavigate);
+  private readonly injector = inject(Injector);
+  private readonly toggleButton = viewChild.required<ElementRef<HTMLButtonElement>>('toggleButton');
+  private readonly nav = viewChild.required<ElementRef<HTMLElement>>('siteNav');
 
   protected readonly groups = NAV_GROUPS;
   protected readonly demo = environment.demo;
@@ -27,10 +33,30 @@ export class Shell {
   }
 
   protected toggleMenu(): void {
-    this.menuOpen.update((open) => !open);
+    const open = !this.menuOpen();
+    this.menuOpen.set(open);
+    if (open) {
+      afterNextRender(() => this.nav().nativeElement.querySelector<HTMLElement>('a')?.focus(), { injector: this.injector });
+    }
   }
 
   protected closeMenu(): void {
     this.menuOpen.set(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    if (this.menuOpen()) {
+      this.closeMenu();
+      this.toggleButton().nativeElement.focus();
+    }
+  }
+
+  /** The drawer only exists below 1024 px; growing the window closes it. */
+  @HostListener('window:resize')
+  protected onResize(): void {
+    if (window.innerWidth >= 1024) {
+      this.closeMenu();
+    }
   }
 }

@@ -9,7 +9,7 @@ import { OpsdeskTitleStrategy } from './layout/title-strategy';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes, withComponentInputBinding(), withInMemoryScrolling({ anchorScrolling: 'enabled' })),
+    provideRouter(routes, withComponentInputBinding(), withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'top' })),
     provideHttpClient(withInterceptors(apiInterceptors(environment.demo))),
     { provide: TitleStrategy, useExisting: OpsdeskTitleStrategy },
   ],

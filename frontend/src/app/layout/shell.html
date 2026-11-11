@@ -1,30 +1,40 @@
 <a class="skip" href="#main" (click)="skipToMain($event)">Skip to main content</a>
 
-@if (demo) {
-  <p class="demo-banner" role="note">Demo: runs in your browser with simulated data. Changes reset on reload.</p>
-}
-
 <header class="topbar">
   <button
+    #toggleButton
     type="button"
     class="menu-toggle"
     [attr.aria-expanded]="menuOpen()"
     aria-controls="site-nav"
+    aria-label="Menu"
     (click)="toggleMenu()"
   >
     <app-icon [name]="menuOpen() ? 'x' : 'menu'" />
-    <span>Menu</span>
   </button>
-  <a class="brand" routerLink="/">opsdesk</a>
+  <a class="brand" routerLink="/">
+    <svg class="logo" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false">
+      <rect width="24" height="24" rx="6" fill="currentColor" />
+      <path d="M4 13h4l2-5 4 9 2-4h4" fill="none" stroke="var(--on-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    <span>opsdesk</span>
+  </a>
   <app-theme-toggle class="toggle" />
-  <a class="repo" [href]="repoUrl" target="_blank" rel="noopener noreferrer">
-    Source on GitHub<span class="visually-hidden"> (opens in a new tab)</span>
-    <app-icon name="external-link" />
+  <a
+    class="repo"
+    [href]="repoUrl"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Source on GitHub (opens in a new tab)"
+  >
+    <app-icon name="github" />
   </a>
 </header>
 
 <div class="layout">
-  <nav id="site-nav" class="sidebar" [class.open]="menuOpen()" aria-label="Main">
+  <div class="scrim" [class.visible]="menuOpen()" (click)="closeMenu()" aria-hidden="true"></div>
+
+  <nav #siteNav id="site-nav" class="sidebar" [class.open]="menuOpen()" aria-label="Main">
     @for (group of groups; track group.label) {
       <section>
         <h2>{{ group.label }}</h2>
@@ -46,13 +56,13 @@
         </ul>
       </section>
     }
+    <p class="sidebar-note">opsdesk is a showcase project. Cloud parts are mocked; see the project guide.</p>
   </nav>
 
-  <main id="main" tabindex="-1">
+  <main id="main" tabindex="-1" [attr.inert]="menuOpen() ? '' : null">
+    @if (demo) {
+      <p class="demo-banner" role="note">Demo: runs in your browser with simulated data. Changes reset on reload.</p>
+    }
     <router-outlet />
   </main>
 </div>
-
-<footer class="footer">
-  <p>opsdesk is a showcase project. Cloud parts are mocked; see the project guide.</p>
-</footer>
