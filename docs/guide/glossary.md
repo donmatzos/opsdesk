@@ -2,6 +2,14 @@
 
 Terms used in opsdesk and its operations, each with a short definition and a link to an authoritative source. Where a term has a counterpart in the repository, a link points to it.
 
+## Ansible playbook
+
+A YAML file that lists tasks to run on hosts. opsdesk's playbook deploys the Helm chart, smoke-tests the route and rolls back on failure; AWX runs it in a real setup.
+
+Source: [Ansible documentation: Playbooks](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_intro.html)
+
+In this repo: [deploy.yml](../../infra/ansible/playbooks/deploy.yml)
+
 ## Arbitrary UID
 
 OpenShift starts containers with a random user id from a namespace range instead of the id in the image, so files the app writes must be usable by group 0 and the image must not depend on a fixed user.
@@ -9,6 +17,22 @@ OpenShift starts containers with a random user id from a namespace range instead
 Source: [OpenShift guidelines for creating images](https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/images/creating-images)
 
 In this repo: [Dockerfile](../../Dockerfile)
+
+## Artifactory
+
+A repository manager for build artifacts such as jars, container images and Helm charts. It is mocked here: real artifacts go to GHCR and GitHub Releases.
+
+Source: [JFrog Artifactory documentation](https://jfrog.com/help/r/jfrog-artifactory-documentation)
+
+In this repo: [Maven profile](../../pom.xml)
+
+## AWX job template
+
+In Ansible Tower and its open-source upstream AWX, a stored definition of how to run a playbook: project, inventory, credentials and the variables to ask for on launch.
+
+Source: [AWX documentation](https://docs.ansible.com/projects/awx/en/latest/)
+
+In this repo: [Terraform for AWX](../../infra/terraform/awx)
 
 ## BM25
 
@@ -56,6 +80,14 @@ Source: [Flyway documentation](https://documentation.red-gate.com/flyway)
 
 In this repo: [migrations](../../backend/src/main/resources/db/migration)
 
+## GitLab CI template
+
+A pipeline definition kept in one place and pulled into other projects with `include:`, so a project only sets variables instead of repeating jobs.
+
+Source: [GitLab documentation: Use CI/CD configuration from other files](https://docs.gitlab.com/ci/yaml/includes/)
+
+In this repo: [ci/gitlab](../../ci/gitlab)
+
 ## gitleaks
 
 A scanner that looks for secrets such as keys and passwords in files and git history. It runs as a pre-commit hook and over the full history in CI.
@@ -95,6 +127,14 @@ A Kubernetes object that routes HTTP traffic from outside the cluster to Service
 Source: [Kubernetes documentation: Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
 
 In this repo: [ingress template](../../deploy/helm/opsdesk/templates/ingress.yaml)
+
+## Jenkinsfile
+
+A text file in the repository that defines a Jenkins pipeline as code: stages, steps, credentials and conditions.
+
+Source: [Jenkins documentation: Using a Jenkinsfile](https://www.jenkins.io/doc/book/pipeline/jenkinsfile/)
+
+In this repo: [Jenkinsfile](../../ci/jenkins/Jenkinsfile)
 
 ## Liveness/readiness probe
 
@@ -205,6 +245,14 @@ Security context constraints are OpenShift's rules for what a pod may do (user i
 Source: [OpenShift documentation: Managing security context constraints](https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/authentication_and_authorization/managing-pod-security-policies)
 
 In this repo: [deployment template](../../deploy/helm/opsdesk/templates/deployment.yaml)
+
+## Semantic versioning
+
+A version scheme MAJOR.MINOR.PATCH where each part tells what kind of change it is. A release tag `vX.Y.Z` must match the Maven and Helm chart versions.
+
+Source: [Semantic Versioning 2.0.0](https://semver.org/)
+
+In this repo: [release-check.sh](../../tools/release-check.sh)
 
 ## SLI
 

@@ -32,7 +32,7 @@ jobs:
     secrets: inherit
 
   context-check:
-    name: Context, contrast and guide check
+    name: Context, contrast, guide and docs check
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -41,6 +41,7 @@ jobs:
       - run: python3 tools/context_check.py
       - run: python3 tools/contrast_check.py
       - run: python3 tools/guide_check.py
+      - run: python3 tools/docs_check.py
 
   secrets:
     name: Secret scan (gitleaks, full history)
