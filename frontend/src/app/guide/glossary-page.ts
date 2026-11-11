@@ -44,21 +44,25 @@ import { filterGlossary, parseGlossary } from './glossary';
 
       <dl class="glossary">
         @for (entry of shown(); track entry.id) {
-          <dt [id]="entry.id">
-            <span [id]="'letter-' + entry.term[0].toUpperCase()" class="letter-anchor"></span>{{ entry.term }}
-          </dt>
-          <dd>
-            <div [innerHTML]="entry.definitionHtml" (click)="onClick($event)"></div>
-            <p class="source">
-              Source:
-              <a [href]="entry.source.url" target="_blank" rel="noopener noreferrer"
-                >{{ entry.source.label }}<span class="visually-hidden"> (opens in a new tab)</span></a
-              >
-            </p>
-            @if (entry.repoHtml) {
-              <div class="repo" (click)="onClick($event)">In this repo: <span [innerHTML]="entry.repoHtml"></span></div>
-            }
-          </dd>
+          <div class="card entry">
+            <dt [id]="entry.id">
+              <span [id]="'letter-' + entry.term[0].toUpperCase()" class="letter-anchor"></span>{{ entry.term }}
+            </dt>
+            <dd>
+              <div [innerHTML]="entry.definitionHtml" (click)="onClick($event)"></div>
+              <p class="links">
+                <span class="source">
+                  Source:
+                  <a [href]="entry.source.url" target="_blank" rel="noopener noreferrer"
+                    >{{ entry.source.label }}<span class="visually-hidden"> (opens in a new tab)</span></a
+                  >
+                </span>
+                @if (entry.repoHtml) {
+                  <span class="repo" (click)="onClick($event)">In this repo: <span [innerHTML]="entry.repoHtml"></span></span>
+                }
+              </p>
+            </dd>
+          </div>
         } @empty {
           <p class="state-text">No term matches "{{ query() }}".</p>
         }
@@ -67,12 +71,25 @@ import { filterGlossary, parseGlossary } from './glossary';
   `,
   styles: `
     .intro, .count { color: var(--muted); }
-    .letters { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 1.5rem; }
-    .letters a { min-width: 2.75rem; min-height: 2.75rem; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: var(--radius); }
-    dt { font-weight: 600; font-size: 1.125rem; margin-top: 1.5rem; scroll-margin-top: 1rem; }
-    dd { margin: 0.25rem 0 0; max-width: var(--prose-width); }
+    .letters {
+      position: sticky;
+      top: var(--header-height);
+      z-index: 5;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      margin: 0 0 1rem;
+      padding: 0.5rem 0;
+      background: var(--bg);
+    }
+    .letters a { min-width: 2.25rem; min-height: 2.25rem; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius); color: var(--accent-text); font-weight: 600; text-decoration: none; }
+    .letters a:hover { background: var(--accent-soft); }
+    .glossary { margin: 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); }
+    .entry { padding: 1rem 1.25rem; scroll-margin-top: 6rem; }
+    dt { font-weight: 600; font-size: 1.125rem; scroll-margin-top: 6rem; }
+    dd { margin: 0.375rem 0 0; }
     dd p, dd div { margin: 0.25rem 0; }
-    .source, .repo { font-size: 0.875rem; color: var(--muted); }
+    .links { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; margin-top: 0.75rem; font-size: 0.875rem; color: var(--muted); }
   `,
 })
 export class GlossaryPage {

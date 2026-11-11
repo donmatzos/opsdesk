@@ -16,7 +16,7 @@ const SEVERITY_RANK: Record<Severity, number> = { SEV1: 0, SEV2: 1, SEV3: 2 };
   styles: `
     .service-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1rem; }
     .service-card { display: grid; gap: 0.5rem; padding: 1rem; }
-    .service-card .top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+    .service-card .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
     h2.section { font-size: 1.125rem; margin: 0 0 0.75rem; }
     .empty { padding: 1rem; margin: 0; color: var(--muted); }
   `,

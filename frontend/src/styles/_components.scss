@@ -15,7 +15,7 @@
 .card-head h2 { margin: 0; font-size: 1.125rem; }
 .card-body { padding: 1rem; }
 
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1rem; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 1rem; }
 .tile {
   display: flex;
   flex-direction: column;
@@ -85,7 +85,8 @@
   .row > :nth-child(n + 3) { grid-column: 2; }
 }
 
-.disclosure-panel { padding: 1rem; }
+.disclosure-panel { padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+.disclosure-panel h2 { margin-top: 0; }
 .example-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 
 .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
@@ -96,3 +97,6 @@
 .table-card tr.clickable { position: relative; cursor: pointer; }
 .table-card tr.clickable a::after { content: ''; position: absolute; inset: 0; }
 .state-text { padding: 0.25rem 0; }
+
+// Markdown rendered inside a glossary entry (innerHTML is outside component style scope): keep the repo link inline.
+.links p { display: inline; margin: 0; }
