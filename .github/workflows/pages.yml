@@ -1,0 +1,75 @@
+# Static demo of the Angular app (in-browser API mock, no backend) on GitHub Pages.
+# Every run builds the demo and checks it with axe-core in a real browser (tools/pages-a11y.sh); the deploy job only
+# runs on main and only when the repository variable PAGES_DEPLOY is "true" (and Pages source is "GitHub Actions").
+# No secrets are used: the demo contains no credentials and talks to no server.
+name: pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - 'docs/guide/**'
+      - 'tools/pages-a11y.*'
+      - 'tools/contrast_check.py'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Build demo and check accessibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      BASE_PATH: /${{ github.event.repository.name }}/
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.2
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: python3 tools/contrast_check.py
+
+      - name: Install and build the demo
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build:demo -- --base-href "${BASE_PATH}"
+          # GitHub Pages serves 404.html for unknown paths: the SPA fallback that makes deep links work.
+          cp dist/demo/index.html dist/demo/404.html
+
+      - name: Accessibility check of the built site (axe-core, light + dark, desktop + phone)
+        run: tools/pages-a11y.sh frontend/dist/demo "${BASE_PATH}"
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        if: github.event_name != 'pull_request'
+        with:
+          path: frontend/dist/demo
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.PAGES_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
