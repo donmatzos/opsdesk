@@ -16,8 +16,8 @@ public class RunbookLoaderTest {
     @Test
     public void shouldLoadTheShippedRunbooks() {
         var runbooks = loader("classpath*:runbooks/*.md").load();
-        assertThat(runbooks).extracting(Runbook::id).containsExactly("database-unavailable", "http-errors",
-                "mcp-token-rotation", "pod-not-ready", "sev1-incident");
+        assertThat(runbooks).extracting(Runbook::id).containsExactly("database-unavailable", "deploy-rollback",
+                "http-errors", "mcp-token-rotation", "pod-not-ready", "secret-exposure", "sev1-incident");
         assertThat(runbooks).allSatisfy(r -> {
             assertThat(r.title()).isNotBlank();
             assertThat(r.chunks().size()).isGreaterThanOrEqualTo(3);
