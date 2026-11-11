@@ -1,0 +1,128 @@
+# Tagged release: vX.Y.Z builds the jar, the container image and the Helm chart, publishes the image and the chart to GHCR and
+# attaches the jar and the chart to a GitHub release. Release images go to their own package (opsdesk-release): the cleanup in
+# ci.yml only keeps the newest 10 versions of the "opsdesk" package and must never see a release.
+# Routine: a PR sets the version (pom.xml and Chart.yaml version + appVersion) to X.Y.Z, the owner tags the merge commit, and the
+# next PR bumps pom.xml back to the next -SNAPSHOT. tools/release-check.sh refuses inconsistent versions.
+name: release
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    uses: ./.github/workflows/maven-verify.yml
+    permissions:
+      contents: read
+      checks: write
+    with:
+      sonar: false
+    secrets: inherit
+
+  release:
+    name: Publish release
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+      packages: write
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}-release
+      CHARTS: oci://ghcr.io/${{ github.repository_owner }}/charts
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Tag, pom and chart versions agree
+        run: tools/release-check.sh "${GITHUB_REF_NAME}"
+
+      - name: Set up JDK
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Build the jar (tests ran in the verify job)
+        run: |
+          ./mvnw -B -ntp -DskipTests package
+          cp backend/target/opsdesk.jar "opsdesk-${GITHUB_REF_NAME#v}.jar"
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build (load locally)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          load: true
+          tags: |
+            opsdesk:release
+            ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Gate (fixable HIGH/CRITICAL fail the release)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: opsdesk:release
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Smoke test (random UID, read-only root FS, throwaway PostgreSQL)
+        run: tools/ci-smoke.sh opsdesk:release
+
+      - name: Log in to GHCR
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push the image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          provenance: false
+          sbom: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
+        with:
+          version: v4.3.1
+
+      # The packaged chart points at the release image package, so a release install never pulls a sha-tagged CI image.
+      - name: Package and push the chart
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          yq -i '.image.repository = strenv(IMAGE)' deploy/helm/opsdesk/values.yaml
+          helm package deploy/helm/opsdesk
+          echo "${GITHUB_TOKEN}" | helm registry login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+          helm push "opsdesk-${GITHUB_REF_NAME#v}.tgz" "${CHARTS}"
+
+      - name: GitHub release with the jar and the chart
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          gh release create "${GITHUB_REF_NAME}" --verify-tag --generate-notes --title "${GITHUB_REF_NAME}"
+          "opsdesk-${GITHUB_REF_NAME#v}.jar" "opsdesk-${GITHUB_REF_NAME#v}.tgz"
