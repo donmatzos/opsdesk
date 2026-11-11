@@ -39,7 +39,7 @@ describe('renderMarkdown', () => {
 
   it('wraps tables in a focusable scroll region', () => {
     const html = renderMarkdown('| a | b |\n|---|---|\n| 1 | 2 |', ctx);
-    expect(html).toContain('<div class="table-scroll" tabindex="0" role="region"');
-    expect(html).toContain('</table></div>');
+    expect(html).toContain('<section class="table-scroll" tabindex="0" aria-label="Table"');
+    expect(html).toContain('</table></section>');
   });
 });

@@ -21,7 +21,7 @@ import { renderMarkdown, slugify } from './markdown';
         </nav>
       }
       @if (content.isLoading()) {
-        <p class="state-text" role="status">Loading…</p>
+        <output class="state-text">Loading…</output>
       } @else if (content.error()) {
         <div class="alert" role="alert">
           <p>This page could not be loaded.</p>

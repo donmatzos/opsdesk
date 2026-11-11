@@ -17,9 +17,13 @@ describe('IncidentApi', () => {
 
   it('lists with and without a state filter', () => {
     api.list('OPEN').subscribe();
-    http.expectOne('/api/incidents?state=OPEN').flush([]);
+    const filtered = http.expectOne('/api/incidents?state=OPEN');
+    expect(filtered.request.method).toBe('GET');
+    filtered.flush([]);
     api.list().subscribe();
-    http.expectOne('/api/incidents').flush([]);
+    const unfiltered = http.expectOne('/api/incidents');
+    expect(unfiltered.request.params.has('state')).toBe(false);
+    unfiltered.flush([]);
   });
 
   it('opens an incident with POST and changes state with PATCH', () => {

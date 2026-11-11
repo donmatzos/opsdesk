@@ -19,7 +19,7 @@ const ACTION_LABEL: Record<IncidentState, string> = {
   template: `
     <p><a routerLink="/incidents">All incidents</a></p>
     @if (incident.isLoading()) {
-      <p class="state-text" role="status">Loading incident…</p>
+      <output class="state-text">Loading incident…</output>
     } @else if (notFound()) {
       <h1>Incident not found</h1>
       <p>There is no incident with the id {{ id() }}. <a routerLink="/incidents">Back to the incident list</a>.</p>

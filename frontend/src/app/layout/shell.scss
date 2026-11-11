@@ -79,7 +79,7 @@ main {
 }
 
 @media (min-width: 1024px) {
-  .menu-toggle { display: none !important; }
+  .topbar .menu-toggle { display: none; }
   .layout { display: grid; grid-template-columns: 16rem 1fr; align-items: start; }
   .sidebar { display: block; min-height: calc(100vh - 8rem); border-bottom: 0; border-right: 1px solid var(--border); }
   main { padding: 2rem 2.5rem 3rem; }

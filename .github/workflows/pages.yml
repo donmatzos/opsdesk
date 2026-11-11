@@ -45,7 +45,8 @@ jobs:
       - name: Install and build the demo
         working-directory: frontend
         run: |
-          npm ci
+          # --ignore-scripts: no dependency lifecycle script runs in CI (the build does not need any)
+          npm ci --ignore-scripts
           npm run build:demo -- --base-href "${BASE_PATH}"
           # GitHub Pages serves 404.html for unknown paths: the SPA fallback that makes deep links work.
           cp dist/demo/index.html dist/demo/404.html

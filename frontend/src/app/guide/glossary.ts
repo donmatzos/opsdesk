@@ -12,8 +12,8 @@ export interface GlossaryEntry {
   repoHtml: string;
 }
 
-const SOURCE = /^Source:\s*\[([^\]]+)\]\((https:\/\/[^)\s]+)\)\s*$/;
-const REPO = /^In this repo:\s*(.+)$/;
+const SOURCE = /^Source: \[([^\]]+)\]\((https:\/\/[^)\s]+)\)\s*$/;
+const REPO = /^In this repo: (.+)$/;
 
 /** Parses docs/guide/glossary.md: one `## Term` per entry with a definition, one `Source:` line and an optional `In this repo:` line. */
 export function parseGlossary(markdown: string, ctx: LinkContext): GlossaryEntry[] {

@@ -41,8 +41,10 @@ describe('demoApiInterceptor', () => {
 
   it('lets requests outside /api pass through to the network', () => {
     const { client, http } = setup();
-    client.get('guide/index.md', { responseType: 'text' }).subscribe();
+    let body = '';
+    client.get('guide/index.md', { responseType: 'text' }).subscribe((text) => (body = text));
     http.expectOne('guide/index.md').flush('# x');
+    expect(body).toBe('# x');
     http.verify();
   });
 

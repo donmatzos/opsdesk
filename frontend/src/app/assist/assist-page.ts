@@ -1,5 +1,4 @@
-import { Component, signal } from '@angular/core';
-import { inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { AssistAnswer, AssistApi, MAX_QUESTION_LENGTH } from './assist-api';

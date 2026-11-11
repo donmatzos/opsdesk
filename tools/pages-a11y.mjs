@@ -45,7 +45,7 @@ try {
         const label = `${route} [${scheme}, ${viewport.name}]`;
         await page.goto(url, { waitUntil: 'networkidle0' });
         await page.waitForSelector('main h1', { timeout: 10000 });
-        await page.waitForFunction(() => !document.querySelector('main [role="status"]'), { timeout: 10000 });
+        await page.waitForFunction(() => !document.querySelector('main output'), { timeout: 10000 });
         const title = await page.title();
         if (!title.endsWith('opsdesk')) {
           failures.push(`${label}: deep link did not render the app (title "${title}")`);

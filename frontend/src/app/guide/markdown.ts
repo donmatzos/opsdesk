@@ -66,6 +66,6 @@ export function renderMarkdown(markdown: string, ctx: LinkContext): string {
   });
   const html = marked.parse(markdown, { async: false });
   return html
-    .replaceAll('<table>', '<div class="table-scroll" tabindex="0" role="region" aria-label="Table"><table>')
-    .replaceAll('</table>', '</table></div>');
+    .replaceAll('<table>', '<section class="table-scroll" tabindex="0" aria-label="Table"><table>')
+    .replaceAll('</table>', '</table></section>');
 }

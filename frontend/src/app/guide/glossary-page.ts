@@ -14,7 +14,7 @@ import { filterGlossary, parseGlossary } from './glossary';
     <p class="intro">Terms used in this project, each with a link to an authoritative source.</p>
 
     @if (content.isLoading()) {
-      <p class="state-text" role="status">Loading glossary…</p>
+      <output class="state-text">Loading glossary…</output>
     } @else if (content.error()) {
       <div class="alert" role="alert">
         <p>The glossary could not be loaded.</p>
@@ -86,7 +86,7 @@ export class GlossaryPage {
   });
   protected readonly query = signal('');
   protected readonly shown = computed(() => filterGlossary(this.entries(), this.query()));
-  protected readonly letters = computed(() => [...new Set(this.entries().map((e) => e.term[0].toUpperCase()))].sort());
+  protected readonly letters = computed(() => [...new Set(this.entries().map((e) => e.term[0].toUpperCase()))].sort((a, b) => a.localeCompare(b)));
 
   /** "In this repo" links to guide pages go through the router; repo links are normal external links. */
   protected onClick(event: MouseEvent): void {

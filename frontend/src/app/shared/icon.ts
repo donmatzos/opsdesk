@@ -31,12 +31,20 @@ interface Shape {
   attrs: Record<string, string>;
 }
 
+const parsed = new Map<string, Shape[]>();
+
 /** Parses the simple shapes above into data, so the template draws them (innerHTML would be stripped by the sanitizer). */
-function shapes(markup: string): Shape[] {
-  return [...markup.matchAll(/<(path|circle|rect)\s+([^>]*?)\/>/g)].map((m) => ({
-    tag: m[1],
-    attrs: Object.fromEntries([...m[2].matchAll(/([\w-]+)="([^"]*)"/g)].map((a) => [a[1], a[2]])),
-  }));
+function shapes(name: string): Shape[] {
+  let found = parsed.get(name);
+  if (!found) {
+    const doc = new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg">${ICONS[name] ?? ''}</svg>`, 'image/svg+xml');
+    found = Array.from(doc.documentElement.children).map((el) => ({
+      tag: el.localName,
+      attrs: Object.fromEntries(Array.from(el.attributes).map((a) => [a.name, a.value])),
+    }));
+    parsed.set(name, found);
+  }
+  return found;
 }
 
 /** Decorative inline SVG icon: always aria-hidden, the text next to it carries the meaning. */
@@ -79,5 +87,5 @@ function shapes(markup: string): Shape[] {
 })
 export class Icon {
   readonly name = input.required<string>();
-  protected readonly shapes = computed(() => shapes(ICONS[this.name()] ?? ''));
+  protected readonly shapes = computed(() => shapes(this.name()));
 }

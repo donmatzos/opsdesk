@@ -30,7 +30,7 @@ export class DemoBackend {
   }
 
   handle(method: string, urlWithParams: string, body: unknown): DemoResponse {
-    const url = new URL(urlWithParams, 'http://demo.invalid');
+    const url = new URL(urlWithParams, 'https://demo.invalid');
     const path = url.pathname;
     const incident = /^\/api\/incidents\/(\d+)$/.exec(path);
 
@@ -126,8 +126,8 @@ export class DemoBackend {
     if (!question?.trim() || question.length > 500) {
       return problem(400, 'Invalid request content.', { errors: { question: 'must not be blank and at most 500 characters' } });
     }
-    const words = question.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
-    const hits = DEMO_RUNBOOKS.map((rb) => ({ rb, score: rb.keywords.filter((k) => words.includes(k)).length }))
+    const words = new Set(question.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean));
+    const hits = DEMO_RUNBOOKS.map((rb) => ({ rb, score: rb.keywords.filter((k) => words.has(k)).length }))
       .filter((h) => h.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 3);

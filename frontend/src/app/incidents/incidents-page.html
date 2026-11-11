@@ -76,7 +76,7 @@
   </div>
 
   @if (incidents.isLoading()) {
-    <p class="state-text" role="status">Loading incidents…</p>
+    <output class="state-text">Loading incidents…</output>
   } @else if (incidents.error()) {
     <div class="alert" role="alert">
       <p>Incidents could not be loaded. Check that the backend is running, then try again.</p>
@@ -85,7 +85,7 @@
   } @else if (!incidents.value()?.length) {
     <p class="state-text">No incidents match. Nothing is on fire.</p>
   } @else {
-    <div class="table-scroll" tabindex="0" role="region" aria-label="Incidents table">
+    <section class="table-scroll" tabindex="0" aria-label="Incidents table">
       <table>
         <caption>Incidents, newest first</caption>
         <thead>
@@ -111,6 +111,6 @@
           }
         </tbody>
       </table>
-    </div>
+    </section>
   }
 </section>

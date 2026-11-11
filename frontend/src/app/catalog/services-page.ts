@@ -11,7 +11,7 @@ const ORDER = ['UP', 'DEGRADED', 'DOWN'] as const;
   template: `
     <h1>Services</h1>
     @if (services.isLoading()) {
-      <p class="state-text" role="status">Loading services…</p>
+      <output class="state-text">Loading services…</output>
     } @else if (services.error()) {
       <div class="alert" role="alert">
         <p>Services could not be loaded. Check that the backend is running, then try again.</p>
@@ -21,7 +21,7 @@ const ORDER = ['UP', 'DEGRADED', 'DOWN'] as const;
       <p class="state-text">No services are monitored yet.</p>
     } @else {
       <p class="summary">{{ summary() }}</p>
-      <div class="table-scroll" tabindex="0" role="region" aria-label="Services table">
+      <section class="table-scroll" tabindex="0" aria-label="Services table">
         <table>
           <caption>Monitored services</caption>
           <thead>
@@ -43,7 +43,7 @@ const ORDER = ['UP', 'DEGRADED', 'DOWN'] as const;
             }
           </tbody>
         </table>
-      </div>
+      </section>
     }
   `,
 })
@@ -56,6 +56,7 @@ export class ServicesPage {
   protected readonly summary = computed(() => {
     const all = this.services.value() ?? [];
     const counts = ORDER.map((s) => [s, all.filter((x) => x.status === s).length] as const).filter(([, n]) => n > 0);
-    return `${all.length} ${all.length === 1 ? 'service' : 'services'}: ${counts.map(([s, n]) => `${n} ${s}`).join(', ')}`;
+    const parts = counts.map(([s, n]) => n + ' ' + s);
+    return `${all.length} ${all.length === 1 ? 'service' : 'services'}: ${parts.join(', ')}`;
   });
 }
