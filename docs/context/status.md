@@ -1,5 +1,5 @@
 # Status (current state and next step only)
-Last updated: 2026-11-11 (UI rework on `update/ui-rework`, PR pending).
+Last updated: 2026-11-11 (UI rework merged, Sonar fixes pending in `fix/sonar-ui-rework`).
 
 ## Where we are
 Phase 1 merged (PR #1, #2): one `opsdesk.jar` (Angular + Spring Boot), catalog + incident API on PostgreSQL, 41 TestNG/Mockito/Testcontainers tests, 2 Vitest tests. History note: the branch history was rewritten on 2026-11-10 to remove a committed local DB password; `main` still has the old phase-1 plan text naming it.
@@ -19,8 +19,8 @@ Sonar cleanup merged (PR #15). `/api/assist` is open and unthrottled on purpose:
 
 Phase 7 merged (PR #16): accessible Angular UI, project guide with 31 sourced glossary terms, static demo with an in-browser API mock, `pages.yml` (build, axe check, deploy gated by `PAGES_DEPLOY`). Three docs.redhat.com glossary links answer 403 to bots and are unverified.
 
-UI rework implemented (branch `update/ui-rework`, not merged; plan `docs/plans/2026-11-11-ui-rework.md`): after owner screenshot review, palette Indigo, System/Light/Dark toggle, sticky shell with a full-height sidebar (the reported bug, now measured by `tools/pages-a11y.sh`), phone drawer, new Overview landing page, pill/tag badges, list-first incidents with chips and card tables, formatted assist answers, guide "On this page" rail and glossary cards. Analysis and decisions: `docs/guide/design.md`. Checked locally: `./mvnw verify` (109 Vitest specs, 42 `ai`, 125 backend tests), 48 built-site checks, contrast check, guide check. Not checked: the Pages deploy itself, Sonar on this branch (run after push).
+UI rework merged (PR #17; plan `docs/plans/2026-11-11-ui-rework.md`): after owner screenshot review, palette Indigo, System/Light/Dark toggle, sticky shell with a full-height sidebar (the reported bug, now measured by `tools/pages-a11y.sh`), phone drawer, new Overview landing page, pill/tag badges, list-first incidents with chips and card tables, formatted assist answers, guide "On this page" rail and glossary cards. Analysis and decisions: `docs/guide/design.md`. Checked locally: `./mvnw verify` (109 Vitest specs, 42 `ai`, 125 backend tests), 48 built-site checks, contrast check, guide check. Not checked: the Pages deploy itself. The Sonar fixes for the rework (0 open issues on the branch) are in `fix/sonar-ui-rework`, not yet merged.
 
 ## Next up
-1. Owner review and merge of the UI rework (then Pages: Settings -> Pages -> Source "GitHub Actions", repository variable `PAGES_DEPLOY=true`; demo URL `https://donmatzos.github.io/opsdesk/`).
+1. Merge `fix/sonar-ui-rework`, then switch on Pages ( Settings -> Pages -> Source "GitHub Actions", repository variable `PAGES_DEPLOY=true`; demo URL `https://donmatzos.github.io/opsdesk/`).
 2. Phase 8 `update/templates-and-polish` (plan `docs/plans/2026-11-10-phase-8-templates-and-polish.md`, open questions inside).
