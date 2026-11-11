@@ -52,19 +52,27 @@ describe('IncidentsPage', () => {
     expect(row.textContent).toContain('report-batch');
     expect(row.textContent).toContain('SEV1');
     expect((row.querySelector('a') as HTMLAnchorElement).getAttribute('href')).toBe('/incidents/7');
+    expect(Array.from(row.querySelectorAll('td')).map((td) => td.getAttribute('data-label'))).toEqual(['Id', 'Service', 'Severity', 'State', 'Summary', 'Opened']);
   });
 
-  it('filters by state through a labelled select', async () => {
+  it('filters by state with chips that show counts, without a new request', async () => {
     const { fixture, el } = await render();
-    expect(el.querySelector('label[for="state-filter"]')?.textContent).toContain('State');
-    choose(el, '#state-filter', 'OPEN');
+    const chips = Array.from(el.querySelectorAll('.chip')).map((c) => c.textContent?.replace(/\s+/g, ' ').trim());
+    expect(chips).toEqual(['All 1', 'Open 1', 'Mitigated 0', 'Resolved 0']);
+    (Array.from(el.querySelectorAll('.chip')).find((c) => c.textContent?.includes('Resolved')) as HTMLButtonElement).click();
     fixture.detectChanges();
-    TestBed.tick();
-    http.expectOne('/api/incidents?state=OPEN').flush(INCIDENTS);
+    expect(el.textContent).toContain('No incidents match');
+    expect(el.querySelector('.chip[aria-pressed="true"]')?.textContent).toContain('Resolved');
   });
 
-  it('opens an incident and announces it', async () => {
+  it('opens the form from a disclosure button and announces a new incident', async () => {
     const { fixture, el } = await render();
+    const button = el.querySelector('button.disclosure') as HTMLButtonElement;
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(el.querySelector('form')).toBeNull();
+    button.click();
+    fixture.detectChanges();
+    expect(button.getAttribute('aria-expanded')).toBe('true');
     choose(el, '#service', '1');
     choose(el, '#severity', 'SEV2');
     choose(el, '#summary', 'checkout is slow');
@@ -79,10 +87,17 @@ describe('IncidentsPage', () => {
     await settle(fixture);
     expect(el.querySelectorAll('tbody tr').length).toBe(2);
     expect(el.querySelector('[aria-live="polite"]')?.textContent).toContain('Incident #8 opened');
+    expect(el.querySelector('form')).toBeNull();
   });
+
+  async function openForm(fixture: { detectChanges(): void }, el: HTMLElement) {
+    (el.querySelector('button.disclosure') as HTMLButtonElement).click();
+    fixture.detectChanges();
+  }
 
   it('does not send an empty form and points to the fields', async () => {
     const { fixture, el } = await render();
+    await openForm(fixture, el);
     (el.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
     await settle(fixture);
     http.expectNone('/api/incidents');
@@ -93,6 +108,7 @@ describe('IncidentsPage', () => {
 
   it('shows the problem detail of a rejected request in an alert', async () => {
     const { fixture, el } = await render();
+    await openForm(fixture, el);
     choose(el, '#service', '1');
     choose(el, '#summary', 'x');
     (el.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
@@ -101,8 +117,10 @@ describe('IncidentsPage', () => {
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('Unknown service 1');
   });
 
-  it('has no axe violations', async () => {
-    const { el } = await render();
+  it('has no axe violations, with the form open too', async () => {
+    const { fixture, el } = await render();
+    await expectNoAxeViolations(el);
+    await openForm(fixture, el);
     await expectNoAxeViolations(el);
   });
 });

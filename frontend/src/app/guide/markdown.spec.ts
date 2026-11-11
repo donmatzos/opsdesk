@@ -1,4 +1,4 @@
-import { renderMarkdown, slugify } from './markdown';
+import { extractToc, renderMarkdown, slugify } from './markdown';
 
 const ctx = { repoUrl: 'https://github.com/donmatzos/opsdesk', repoRef: 'main' };
 
@@ -41,5 +41,20 @@ describe('renderMarkdown', () => {
     const html = renderMarkdown('| a | b |\n|---|---|\n| 1 | 2 |', ctx);
     expect(html).toContain('<section class="table-scroll" tabindex="0" aria-label="Table"');
     expect(html).toContain('</table></section>');
+  });
+});
+
+describe('extractToc', () => {
+  it('lists h2 and h3 headings with the ids the renderer gives them', () => {
+    const md = '# Title\n\n## First step\n\ntext\n\n### Detail `code`\n\n## Second\n';
+    expect(extractToc(md)).toEqual([
+      { id: 'first-step', text: 'First step', level: 2 },
+      { id: 'detail-code', text: 'Detail code', level: 3 },
+      { id: 'second', text: 'Second', level: 2 },
+    ]);
+  });
+
+  it('ignores headings inside code fences', () => {
+    expect(extractToc('## Real\n\n```\n## not a heading\n```\n')).toEqual([{ id: 'real', text: 'Real', level: 2 }]);
   });
 });

@@ -1,5 +1,5 @@
 # Status (current state and next step only)
-Last updated: 2026-11-11 (phase 7 implemented on `feature/project-guide`, PR pending).
+Last updated: 2026-11-11 (UI rework on `update/ui-rework`, PR pending).
 
 ## Where we are
 Phase 1 merged (PR #1, #2): one `opsdesk.jar` (Angular + Spring Boot), catalog + incident API on PostgreSQL, 41 TestNG/Mockito/Testcontainers tests, 2 Vitest tests. History note: the branch history was rewritten on 2026-11-10 to remove a committed local DB password; `main` still has the old phase-1 plan text naming it.
@@ -17,8 +17,10 @@ Phase 6 merged (PR #13): new `ai` module (plain Java: runbook parser, BM25 index
 
 Sonar cleanup merged (PR #15). `/api/assist` is open and unthrottled on purpose: close/throttle it before real use with profile `azure`.
 
-Phase 7 implemented (branch `feature/project-guide`, not merged): UI/UX analysis (`docs/guide/design.md`), accessible app shell with tokens (light/dark), services overview, incident list/detail/actions, ask-the-runbooks view, project guide (architecture tour, skills, glossary with 31 sourced terms) rendered from `docs/guide/*.md`, demo mode with an in-browser API mock, `pages.yml` (build, axe check, deploy gated by `PAGES_DEPLOY`). Checked locally: `./mvnw verify` (75 Vitest specs incl. axe, 42 `ai` and 125 backend tests), `tools/pages-a11y.sh` (42 checks pass, and fails with a low-contrast token), `tools/contrast_check.py`, `tools/guide_check.py`, actionlint. Not checked: three docs.redhat.com glossary links (403 to bots), the Pages deploy itself, the demo in a real browser by eye. Details: `docs/context/frontend.md`.
+Phase 7 merged (PR #16): accessible Angular UI, project guide with 31 sourced glossary terms, static demo with an in-browser API mock, `pages.yml` (build, axe check, deploy gated by `PAGES_DEPLOY`). Three docs.redhat.com glossary links answer 403 to bots and are unverified.
+
+UI rework implemented (branch `update/ui-rework`, not merged; plan `docs/plans/2026-11-11-ui-rework.md`): after owner screenshot review, palette Indigo, System/Light/Dark toggle, sticky shell with a full-height sidebar (the reported bug, now measured by `tools/pages-a11y.sh`), phone drawer, new Overview landing page, pill/tag badges, list-first incidents with chips and card tables, formatted assist answers, guide "On this page" rail and glossary cards. Analysis and decisions: `docs/guide/design.md`. Checked locally: `./mvnw verify` (109 Vitest specs, 42 `ai`, 125 backend tests), 48 built-site checks, contrast check, guide check. Not checked: the Pages deploy itself, Sonar on this branch (run after push).
 
 ## Next up
-1. Owner review and merge of phase 7. Then switch on Pages: Settings -> Pages -> Source "GitHub Actions", repository variable `PAGES_DEPLOY=true`; the demo URL is `https://donmatzos.github.io/opsdesk/`.
+1. Owner review and merge of the UI rework (then Pages: Settings -> Pages -> Source "GitHub Actions", repository variable `PAGES_DEPLOY=true`; demo URL `https://donmatzos.github.io/opsdesk/`).
 2. Phase 8 `update/templates-and-polish` (plan `docs/plans/2026-11-10-phase-8-templates-and-polish.md`, open questions inside).

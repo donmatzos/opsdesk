@@ -72,6 +72,12 @@ describe('GlossaryPage', () => {
     expect(el.textContent).toContain('No term matches "zzz"');
   });
 
+  it('has a letter rail and puts source and repo link on one line', async () => {
+    const { el } = await render();
+    expect(Array.from(el.querySelectorAll('.letters a')).map((a) => a.textContent?.trim())).toEqual(['H', 'M', 'S']);
+    expect(el.querySelector('.entry .links .source')).not.toBeNull();
+  });
+
   it('links each source in a new tab', async () => {
     const { el } = await render();
     const link = el.querySelector('.source a') as HTMLAnchorElement;

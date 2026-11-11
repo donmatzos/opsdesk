@@ -48,6 +48,18 @@ describe('GuidePage', () => {
     expect((window as unknown as { pwned?: boolean }).pwned).toBeUndefined();
   });
 
+  it('offers an "On this page" list for pages with several headings', async () => {
+    const md = '# T\n\n## One\n\ntext\n\n## Two\n\ntext\n';
+    const el = await load(render('architecture'), 'architecture.md', md);
+    const toc = el.querySelector('nav[aria-label="On this page"]');
+    expect(Array.from(toc?.querySelectorAll('a') ?? []).map((a) => a.textContent?.trim())).toEqual(['One', 'Two']);
+  });
+
+  it('shows no "On this page" list when there is nothing to jump to', async () => {
+    const el = await load(render('architecture'), 'architecture.md', '# T\n\n## Only\n');
+    expect(el.querySelector('nav[aria-label="On this page"]')).toBeNull();
+  });
+
   it('shows the overview at /guide without breadcrumbs, and a breadcrumb on sub pages', async () => {
     const overview = await load(render(), 'index.md', '# Project guide');
     expect(overview.querySelector('.breadcrumb')).toBeNull();

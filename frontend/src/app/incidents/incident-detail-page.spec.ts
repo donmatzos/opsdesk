@@ -41,6 +41,16 @@ describe('IncidentDetailPage', () => {
     expect(buttons).toEqual(['Resolve']);
   });
 
+  it('shows a timeline with the opening and, once resolved, the resolution', async () => {
+    const { fixture, el } = await render(ok);
+    expect(Array.from(el.querySelectorAll('.timeline li strong')).map((s) => s.textContent)).toEqual(['Opened', 'Now:']);
+    (el.querySelector('button') as HTMLButtonElement).click();
+    http.expectOne('/api/incidents/7').flush({ ...MITIGATED, state: 'RESOLVED', resolvedAt: '2026-11-10T12:00:00Z' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(Array.from(el.querySelectorAll('.timeline li strong')).map((s) => s.textContent)).toEqual(['Opened', 'Resolved']);
+  });
+
   it('changes the state and announces the result', async () => {
     const { fixture, el } = await render(ok);
     (el.querySelector('button') as HTMLButtonElement).click();

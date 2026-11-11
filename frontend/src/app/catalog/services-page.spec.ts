@@ -41,16 +41,33 @@ describe('ServicesPage', () => {
     http.expectOne('/api/services').flush([]);
   });
 
-  it('summarises the statuses as text and renders one row per service with a badge', async () => {
+  it('shows status chips with counts and renders one row per service with a badge', async () => {
     const el = await answer(await render(), SERVICES);
     expect(el.querySelector('h1')?.textContent).toBe('Services');
-    expect(el.querySelector('.summary')?.textContent).toContain('3 services: 2 UP, 1 DOWN');
+    const chips = Array.from(el.querySelectorAll('.chip')).map((c) => c.textContent?.replace(/\s+/g, ' ').trim());
+    expect(chips).toEqual(['All 3', 'Up 2', 'Degraded 0', 'Down 1']);
+    expect(el.querySelector('.chip[aria-pressed="true"]')?.textContent).toContain('All');
     expect(el.querySelector('caption')?.textContent).toContain('Monitored services');
     expect(el.querySelectorAll('th[scope="col"]').length).toBe(4);
     const rows = el.querySelectorAll('tbody tr');
     expect(rows.length).toBe(3);
     expect(rows[0].textContent).toContain('billing-api');
     expect(rows[1].querySelector('app-status-badge')?.textContent?.trim()).toBe('DOWN');
+  });
+
+  it('filters by status with the chips, without a new request', async () => {
+    const fixture = await render();
+    const el = await answer(fixture, SERVICES);
+    (Array.from(el.querySelectorAll('.chip')).find((c) => c.textContent?.includes('Down')) as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(Array.from(el.querySelectorAll('tbody tr')).map((r) => r.textContent)).toEqual([expect.stringContaining('report-batch')]);
+    expect(el.querySelector('.chip[aria-pressed="true"]')?.textContent).toContain('Down');
+  });
+
+  it('labels every cell so the table can become a card list on phones', async () => {
+    const el = await answer(await render(), SERVICES);
+    const labels = Array.from(el.querySelectorAll('tbody tr:first-child td')).map((td) => td.getAttribute('data-label'));
+    expect(labels).toEqual(['Name', 'Owner', 'Stage', 'Status']);
   });
 
   it('says so when there are no services', async () => {

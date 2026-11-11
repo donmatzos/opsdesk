@@ -7,7 +7,7 @@ import puppeteer from 'puppeteer';
 
 const require = createRequire(import.meta.url);
 const [baseUrl, basePath] = process.argv.slice(2);
-const ROUTES = ['guide', 'guide/architecture', 'guide/skills', 'guide/design', 'guide/glossary', 'services', 'incidents', 'incidents/2', 'assist', 'no-such-page'];
+const ROUTES = ['overview', 'guide', 'guide/architecture', 'guide/skills', 'guide/design', 'guide/glossary', 'services', 'incidents', 'incidents/2', 'assist', 'no-such-page'];
 const SCHEMES = ['light', 'dark'];
 const VIEWPORTS = [
   { name: 'desktop', width: 1280, height: 900 },
@@ -29,6 +29,40 @@ async function audit(page, label) {
   for (const v of result.violations) {
     failures.push(`${label}: ${v.id} (${v.impact}) ${v.help}\n    ${v.nodes.slice(0, 3).map((n) => n.target.join(' ') + ' -> ' + (n.any[0]?.message ?? '')).join('\n    ')}`);
   }
+}
+
+/** The reported bug: on a long page the sidebar must stay pinned under the header and reach the bottom of the window. */
+async function checkSidebarStaysFull(page, label) {
+  await page.goto(`${baseUrl}${basePath}guide/glossary`, { waitUntil: 'networkidle0' });
+  await page.waitForSelector('main h1');
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  const box = await page.evaluate(() => {
+    const r = document.querySelector('nav.sidebar').getBoundingClientRect();
+    return { top: Math.round(r.top), bottom: Math.round(r.bottom), header: Math.round(document.querySelector('header.topbar').getBoundingClientRect().bottom), height: window.innerHeight };
+  });
+  if (Math.abs(box.top - box.header) > 1 || box.bottom < box.height - 1) {
+    failures.push(`sidebar ${label}: after scrolling it spans ${box.top}..${box.bottom}px, expected ${box.header}..${box.height}px`);
+  }
+}
+
+/** The theme toggle forces a scheme regardless of the OS, stays AA and survives a reload (stored, set before first paint). */
+async function checkThemeToggle(page, osScheme) {
+  const target = osScheme === 'light' ? 'dark' : 'light';
+  await page.goto(`${baseUrl}${basePath}services`, { waitUntil: 'networkidle0' });
+  await page.waitForSelector('main h1');
+  await page.click(`label:has(input[value="${target}"])`);
+  const applied = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+  if (applied !== target) {
+    failures.push(`toggle [os ${osScheme}]: choosing ${target} set data-theme="${applied}"`);
+  }
+  await audit(page, `services via toggle -> ${target} [os ${osScheme}]`);
+  await page.reload({ waitUntil: 'networkidle0' });
+  const kept = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+  if (kept !== target) {
+    failures.push(`toggle [os ${osScheme}]: ${target} was not kept after a reload (got ${kept})`);
+  }
+  await page.evaluate(() => localStorage.clear());
+  await page.reload({ waitUntil: 'networkidle0' });
 }
 
 try {
@@ -56,6 +90,10 @@ try {
         }
         await audit(page, label);
       }
+      if (viewport.name === 'desktop') {
+        await checkSidebarStaysFull(page, `[${scheme}]`);
+        await checkThemeToggle(page, scheme);
+      }
       if (viewport.name === 'phone') {
         await page.goto(`${baseUrl}${basePath}services`, { waitUntil: 'networkidle0' });
         await page.waitForSelector('main h1');
@@ -73,4 +111,4 @@ if (failures.length) {
   console.error(`FAIL: ${failures.length} problem(s) in ${checked} checks\n\n${failures.join('\n\n')}`);
   process.exit(1);
 }
-console.log(`ok: ${checked} checks (${ROUTES.length} routes x ${SCHEMES.length} schemes x ${VIEWPORTS.length} viewports + open menu), no WCAG A/AA violations`);
+console.log(`ok: ${checked} checks (${ROUTES.length} routes x ${SCHEMES.length} schemes x ${VIEWPORTS.length} viewports, open phone menu, forced theme via the toggle, sticky sidebar), no WCAG A/AA violations`);

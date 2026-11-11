@@ -1,0 +1,102 @@
+// Shared building blocks: page header, cards, tiles, filter chips, rows and tables that become card lists on phones.
+.page-header { margin-bottom: 1.5rem; }
+.page-header h1 { margin: 0 0 0.25rem; }
+.lede { margin: 0; color: var(--muted); max-width: var(--prose-width); }
+.stack { display: grid; gap: 1.5rem; }
+.meta { color: var(--muted); font-size: 0.875rem; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.875rem 1rem; }
+.card-head h2 { margin: 0; font-size: 1.125rem; }
+.card-body { padding: 1rem; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 1rem; }
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color var(--transition), background-color var(--transition);
+
+  &:hover { border-color: var(--strong); background: var(--surface-2); }
+  .tile-label { color: var(--muted); font-size: 0.875rem; font-weight: 600; }
+  .tile-value { font-size: 2.25rem; line-height: 1.1; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tile-hint { color: var(--muted); font-size: 0.8125rem; }
+  .ok { color: var(--ok); }
+  .warn { color: var(--warning); }
+  .bad { color: var(--danger); }
+}
+
+.rows { list-style: none; margin: 0; padding: 0; }
+.row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+
+  a { color: var(--text); font-weight: 500; text-decoration: none; &:hover { text-decoration: underline; } }
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 1rem; padding: 0; border: 0; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0 0.875rem;
+  border: 1px solid var(--strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.875rem;
+
+  .count { color: var(--muted); font-variant-numeric: tabular-nums; }
+  &[aria-pressed='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-text); font-weight: 600; .count { color: var(--accent-text); } }
+}
+
+// A table inside a card; below 768 px every row becomes a small card (cells carry data-label).
+.table-card { overflow: hidden; }
+.table-card table { margin: 0; }
+.table-card th { background: var(--surface-2); }
+.table-card tbody tr { transition: background-color var(--transition); }
+.table-card tbody tr:hover { background: var(--surface-2); }
+.table-card td a { color: var(--text); font-weight: 500; }
+
+@media (max-width: 767px) {
+  .table-cards thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .table-cards, .table-cards tbody, .table-cards tr, .table-cards td { display: block; width: 100%; }
+  .table-cards tr { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
+  .table-cards td { display: flex; justify-content: space-between; gap: 1rem; padding: 0.25rem 0; border: 0; text-align: right; }
+  .table-cards td::before { content: attr(data-label); color: var(--muted); font-size: 0.8125rem; font-weight: 600; text-align: left; }
+  .row { grid-template-columns: auto minmax(0, 1fr); }
+  .row > :nth-child(n + 3) { grid-column: 2; }
+}
+
+.disclosure-panel { padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+.disclosure-panel h2 { margin-top: 0; }
+.example-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.fields { display: flex; flex-wrap: wrap; gap: 0 1.5rem; }
+.fields .field { min-width: 14rem; flex: 1 1 14rem; }
+.field.wide { max-width: 48rem; }
+// Stretched link: the summary link covers its whole row, so the row is one big target without a click handler.
+.table-card tr.clickable { position: relative; cursor: pointer; }
+.table-card tr.clickable a::after { content: ''; position: absolute; inset: 0; }
+.state-text { padding: 0.25rem 0; }
+
+// Markdown rendered inside a glossary entry (innerHTML is outside component style scope): keep the repo link inline.
+.links p { display: inline; margin: 0; }

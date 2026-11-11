@@ -69,3 +69,26 @@ export function renderMarkdown(markdown: string, ctx: LinkContext): string {
     .replaceAll('<table>', '<section class="table-scroll" tabindex="0" aria-label="Table"><table>')
     .replaceAll('</table>', '</table></section>');
 }
+
+export interface TocEntry {
+  id: string;
+  text: string;
+  level: 2 | 3;
+}
+
+/** The h2 and h3 headings of a Markdown page, for the "On this page" list (ids match the rendered headings). */
+export function extractToc(markdown: string): TocEntry[] {
+  const entries: TocEntry[] = [];
+  let inFence = false;
+  for (const line of markdown.split('\n')) {
+    if (line.trimStart().startsWith('```')) {
+      inFence = !inFence;
+    } else if (!inFence && (line.startsWith('## ') || line.startsWith('### '))) {
+      const level = line.startsWith('### ') ? 3 : 2;
+      const text = line.slice(level + 1).replace(/[`*_]/g, '').trim();
+      entries.push({ id: slugify(text), text, level });
+    }
+  }
+  return entries;
+}
+

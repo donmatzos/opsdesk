@@ -14,6 +14,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Dashboard',
     items: [
+      { label: 'Overview', route: '/overview', icon: 'layout-dashboard' },
       { label: 'Services', route: '/services', icon: 'server' },
       { label: 'Incidents', route: '/incidents', icon: 'triangle-alert' },
       { label: 'Ask the runbooks', route: '/assist', icon: 'message-square' },
@@ -22,7 +23,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Project guide',
     items: [
-      { label: 'Overview', route: '/guide', icon: 'book-open' },
+      { label: 'Introduction', route: '/guide', icon: 'book-open' },
       { label: 'Architecture', route: '/guide/architecture', icon: 'layers' },
       { label: 'What this shows', route: '/guide/skills', icon: 'list-checks' },
       { label: 'Design and accessibility', route: '/guide/design', icon: 'eye' },

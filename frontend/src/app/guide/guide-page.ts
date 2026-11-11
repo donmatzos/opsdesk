@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { GuideContent } from './guide-content';
 import { GUIDE_PAGES } from './guide-pages';
-import { renderMarkdown, slugify } from './markdown';
+import { extractToc, renderMarkdown, slugify } from './markdown';
 
 /** One page of docs/guide rendered from Markdown. Route: /guide (overview) and /guide/:page. */
 @Component({
@@ -28,11 +28,36 @@ import { renderMarkdown, slugify } from './markdown';
           <button type="button" (click)="content.reload()">Try again</button>
         </div>
       } @else {
-        <article class="prose" [innerHTML]="html()" (click)="onClick($event)"></article>
+        <div class="guide-layout">
+          <article class="prose" [innerHTML]="html()" (click)="onClick($event)"></article>
+          @if (toc().length > 1) {
+            <nav class="toc" aria-label="On this page">
+              <h2>On this page</h2>
+              <ul>
+                @for (h of toc(); track h.id) {
+                  <li [class.sub]="h.level === 3"><a [routerLink]="[]" [fragment]="h.id">{{ h.text }}</a></li>
+                }
+              </ul>
+            </nav>
+          }
+        </div>
       }
     }
   `,
-  styles: `.breadcrumb { margin-bottom: 1rem; font-size: 0.875rem; color: var(--muted); }`,
+  styles: `
+    .breadcrumb { margin-bottom: 1rem; font-size: 0.875rem; color: var(--muted); }
+    .guide-layout { display: grid; gap: 3rem; grid-template-columns: minmax(0, var(--prose-width)); }
+    .toc { display: none; }
+    @media (min-width: 1200px) {
+      .guide-layout { grid-template-columns: minmax(0, var(--prose-width)) 15rem; }
+      .toc { display: block; position: sticky; top: calc(var(--header-height) + 1.5rem); align-self: start; max-height: calc(100dvh - var(--header-height) - 3rem); overflow-y: auto; }
+    }
+    .toc h2 { margin: 0 0 0.5rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+    .toc ul { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--border); }
+    .toc li a { display: block; padding: 0.25rem 0.75rem; color: var(--muted); font-size: 0.875rem; text-decoration: none; }
+    .toc li a:hover { color: var(--text); }
+    .toc li.sub a { padding-left: 1.5rem; }
+  `,
 })
 export class GuidePage {
   private readonly guide = inject(GuideContent);
@@ -48,6 +73,7 @@ export class GuidePage {
     params: () => this.current()?.file,
     stream: ({ params }) => this.guide.load(params),
   });
+  protected readonly toc = computed(() => extractToc(this.content.value() ?? ''));
   protected readonly html = computed(() =>
     renderMarkdown(this.content.value() ?? '', { repoUrl: environment.repoUrl, repoRef: environment.repoRef }),
   );

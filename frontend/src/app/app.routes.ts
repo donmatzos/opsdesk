@@ -7,11 +7,13 @@ import { GuidePage } from './guide/guide-page';
 import { GUIDE_PAGES } from './guide/guide-pages';
 import { IncidentDetailPage } from './incidents/incident-detail-page';
 import { IncidentsPage } from './incidents/incidents-page';
+import { OverviewPage } from './overview/overview-page';
 import { NotFoundPage } from './shared/not-found-page';
 
 // Every route here must also be forwarded to index.html by the backend's SpaForwardController (and be in SpaRoutingTest).
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: environment.homeRoute },
+  { path: 'overview', component: OverviewPage, title: 'Overview' },
   { path: 'services', component: ServicesPage, title: 'Services' },
   { path: 'incidents', component: IncidentsPage, title: 'Incidents' },
   { path: 'incidents/:id', component: IncidentDetailPage, title: 'Incident' },
