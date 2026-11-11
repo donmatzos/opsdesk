@@ -17,6 +17,7 @@ import tools.jackson.databind.JsonNode;
 public final class AzureOpenAiLlmClient implements LlmClient {
 
     private static final String SERVICE = "Azure OpenAI";
+    private static final String CONTENT = "content";
 
     private final AzureSettings settings;
     private final AzureCredentials credentials;
@@ -33,14 +34,14 @@ public final class AzureOpenAiLlmClient implements LlmClient {
         String body = AzureHttp.toJson(Map.of(
                 "model", settings.openAiDeployment(),
                 "messages", List.of(
-                        Map.of("role", "system", "content", PromptBuilder.systemPrompt()),
-                        Map.of("role", "user", "content", PromptBuilder.userPrompt(question, passages))),
+                        Map.of("role", "system", CONTENT, PromptBuilder.systemPrompt()),
+                        Map.of("role", "user", CONTENT, PromptBuilder.userPrompt(question, passages))),
                 "temperature", 0.1,
                 "max_completion_tokens", 600));
         JsonNode response = http.postJson(SERVICE,
                 URI.create(settings.openAiEndpoint() + "/openai/v1/chat/completions"),
                 credentials.openAiApiKey(), body);
-        JsonNode content = response.path("choices").path(0).path("message").path("content");
+        JsonNode content = response.path("choices").path(0).path("message").path(CONTENT);
         if (!content.isString()) {
             throw new AiBackendException(SERVICE + " returned an unexpected response");
         }

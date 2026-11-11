@@ -1,5 +1,5 @@
 # Status (current state and next step only)
-Last updated: 2026-11-11 (phase 6 implemented on `feature/runbook-rag`, PR pending).
+Last updated: 2026-11-11 (phase 6 merged, Sonar findings cleanup).
 
 ## Where we are
 Phase 1 merged (PR #1, #2): one `opsdesk.jar` (Angular + Spring Boot), catalog + incident API on PostgreSQL, 41 TestNG/Mockito/Testcontainers tests, 2 Vitest tests. History note: the branch history was rewritten on 2026-11-10 to remove a committed local DB password; `main` still has the old phase-1 plan text naming it.
@@ -13,8 +13,8 @@ Phase 5 merged (PR #10): MCP server in the backend (`/mcp`, stateless Streamable
 
 CI change merged (PR #11): push and PR run only `verify` (build + Sonar); context check, gitleaks, Trivy, Terraform, Helm, image, publish and deploy run only for pushes to `main`. Gitleaks therefore no longer runs on PRs: rely on the local pre-commit hook.
 
-Phase 6 implemented (branch `feature/runbook-rag`, not merged): new `ai` module (plain Java: runbook parser, BM25 index, `RunbookAssistant`, `MockLlmClient`, Azure OpenAI/AI Search REST adapters), 5 runbooks packaged into the jar, `POST /api/assist`, MCP tool `search_runbooks` (7 tools), profile `azure` (off, fails fast, tested against a fake server only), `infra/terraform/azure` (validate only, CI matrix). Local LLM decision: mock only. Checked locally: `./mvnw verify`, `tools/smoke-test.sh`, `tools/mcp-verify.sh`, terraform fmt/validate/tflint in Docker.
+Phase 6 merged (PR #13): new `ai` module (plain Java: runbook parser, BM25 index, `RunbookAssistant`, `MockLlmClient`, Azure OpenAI/AI Search REST adapters), 5 runbooks packaged into the jar, `POST /api/assist`, MCP tool `search_runbooks` (7 tools), profile `azure` (off, fails fast, tested against a fake server only), `infra/terraform/azure` (validate only, CI matrix). Local LLM decision: mock only. Checked locally: `./mvnw verify`, `tools/smoke-test.sh`, `tools/mcp-verify.sh`, terraform fmt/validate/tflint in Docker.
 
 ## Next up
-1. Owner review and merge of phase 6; then update this file.
+1. Sonar cleanup (`fix/sonar-findings`): code smells fixed; `/api/assist` is open and unthrottled on purpose, close/throttle it before real use with profile `azure`.
 2. Phase 7 `feature/project-guide` (plan `docs/plans/2026-11-10-phase-7-project-guide.md`; starts with a UI/UX analysis), then phase 8 (plan written, open questions inside).

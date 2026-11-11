@@ -4,7 +4,7 @@ package at.donmatzos.opsdesk.ai;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /** Non-secret connection settings for profile "azure". The API keys are not part of this class, see {@link AzureCredentials}. */
 public record AzureSettings(URI openAiEndpoint, String openAiDeployment, URI searchEndpoint, String searchIndex) {
@@ -16,7 +16,7 @@ public record AzureSettings(URI openAiEndpoint, String openAiDeployment, URI sea
     static final String SEARCH_KEY = "AZURE_SEARCH_API_KEY";
     static final String SEARCH_INDEX = "AZURE_SEARCH_INDEX";
 
-    public static AzureSettings from(Function<String, String> env) {
+    public static AzureSettings from(UnaryOperator<String> env) {
         List<String> missing = new ArrayList<>();
         String openAiEndpoint = value(env, OPENAI_ENDPOINT, missing);
         // Keys are only checked for presence here (fail fast); the values are read later by AzureCredentials.
@@ -33,7 +33,7 @@ public record AzureSettings(URI openAiEndpoint, String openAiDeployment, URI sea
                 endpoint(SEARCH_ENDPOINT, searchEndpoint), index);
     }
 
-    private static String value(Function<String, String> env, String name, List<String> missing) {
+    private static String value(UnaryOperator<String> env, String name, List<String> missing) {
         String v = env.apply(name);
         if (v == null || v.isBlank()) {
             missing.add(name);

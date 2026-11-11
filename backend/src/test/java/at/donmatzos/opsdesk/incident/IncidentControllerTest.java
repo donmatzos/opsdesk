@@ -2,7 +2,6 @@ package at.donmatzos.opsdesk.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +58,7 @@ public class IncidentControllerTest extends AbstractTestNGSpringContextTests {
 
     @Test
     public void shouldReturn409WhenServiceRejectsTransition() {
-        when(service.changeState(eq(7L), eq(IncidentState.OPEN)))
+        when(service.changeState(7L, IncidentState.OPEN))
                 .thenThrow(new IllegalStateTransitionException(IncidentState.RESOLVED, IncidentState.OPEN));
 
         assertThat(mvc.patch().uri("/api/incidents/7").contentType(MediaType.APPLICATION_JSON)
@@ -70,7 +69,7 @@ public class IncidentControllerTest extends AbstractTestNGSpringContextTests {
 
     @Test
     public void shouldReturn409WhenIncidentWasChangedConcurrently() {
-        when(service.changeState(eq(7L), eq(IncidentState.RESOLVED)))
+        when(service.changeState(7L, IncidentState.RESOLVED))
                 .thenThrow(new OptimisticLockingFailureException("stale"));
 
         assertThat(mvc.patch().uri("/api/incidents/7").contentType(MediaType.APPLICATION_JSON)
@@ -85,8 +84,7 @@ public class IncidentControllerTest extends AbstractTestNGSpringContextTests {
         when(service.list(any())).thenThrow(new IllegalStateException("connection to db-secret-host failed"));
 
         MvcTestResult result = mvc.get().uri("/api/incidents").exchange();
-        assertThat(result).hasStatus(500).hasContentType(PROBLEM_JSON);
-        assertThat(result).bodyText().doesNotContain("db-secret-host");
+        assertThat(result).hasStatus(500).hasContentType(PROBLEM_JSON).bodyText().doesNotContain("db-secret-host");
     }
 
     @Test

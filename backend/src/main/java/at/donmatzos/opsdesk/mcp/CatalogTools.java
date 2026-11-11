@@ -31,8 +31,8 @@ class CatalogTools {
             annotations = @McpAnnotations(readOnlyHint = true, destructiveHint = false, idempotentHint = true,
                     openWorldHint = false))
     List<ServiceSummary> listServices(
-            @McpToolParam(required = false, description = """
-                    Only return services in this stage. Valid values: DEV, PROD. Omit to return all stages.""")
+            @McpToolParam(required = false,
+                    description = "Only return services in this stage. Valid values: DEV, PROD. Omit to return all stages.")
             Stage stage) {
         var found = stage == null ? services.findAllByOrderByNameAsc() : services.findByStageOrderByNameAsc(stage);
         return found.stream()

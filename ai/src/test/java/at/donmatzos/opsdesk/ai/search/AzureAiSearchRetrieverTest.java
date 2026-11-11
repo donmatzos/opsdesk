@@ -13,7 +13,7 @@ import org.testng.annotations.Test;
 
 public class AzureAiSearchRetrieverTest {
 
-    private static AzureSettings settings(URI endpoint, String key) {
+    private static AzureSettings settings(URI endpoint) {
         return new AzureSettings(endpoint, "d", endpoint, "my-index");
     }
 
@@ -23,7 +23,7 @@ public class AzureAiSearchRetrieverTest {
         String reply = "{\"value\":[{\"@search.score\":2.5,\"id\":\"a--s\",\"runbook\":\"a\",\"title\":\"A\","
                 + "\"section\":\"S\",\"content\":\"text\",\"order\":1}]}";
         try (var server = new FakeServer(200, reply)) {
-            var hits = new AzureAiSearchRetriever(settings(server.uri(), key), FakeServer.credentials(key), HttpClient.newHttpClient())
+            var hits = new AzureAiSearchRetriever(settings(server.uri()), FakeServer.credentials(key), HttpClient.newHttpClient())
                     .search("pod", 2);
 
             var seen = server.seen.get();
@@ -41,7 +41,7 @@ public class AzureAiSearchRetrieverTest {
     public void shouldNotLeakBodyOrKeyOnHttpError() throws Exception {
         String key = UUID.randomUUID().toString();
         try (var server = new FakeServer(403, key)) {
-            var retriever = new AzureAiSearchRetriever(settings(server.uri(), key), FakeServer.credentials(key), HttpClient.newHttpClient());
+            var retriever = new AzureAiSearchRetriever(settings(server.uri()), FakeServer.credentials(key), HttpClient.newHttpClient());
             assertThatThrownBy(() -> retriever.search("x", 1)).isInstanceOf(AiBackendException.class)
                     .hasMessage("Azure AI Search returned HTTP 403");
         }
@@ -50,7 +50,7 @@ public class AzureAiSearchRetrieverTest {
     @Test
     public void shouldNotCallAzureForBlankQueries() throws Exception {
         try (var server = new FakeServer(200, "{}")) {
-            assertThat(new AzureAiSearchRetriever(settings(server.uri(), "k"), FakeServer.credentials("k"), HttpClient.newHttpClient())
+            assertThat(new AzureAiSearchRetriever(settings(server.uri()), FakeServer.credentials("k"), HttpClient.newHttpClient())
                     .search(" ", 1)).isEmpty();
             assertThat(server.seen.get()).isNull();
         }
@@ -59,7 +59,7 @@ public class AzureAiSearchRetrieverTest {
     @Test
     public void shouldRejectHitsWithoutIdOrRunbook() throws Exception {
         try (var server = new FakeServer(200, "{\"value\":[{\"@search.score\":1.0,\"title\":\"A\"}]}")) {
-            var retriever = new AzureAiSearchRetriever(settings(server.uri(), "k"), FakeServer.credentials("k"),
+            var retriever = new AzureAiSearchRetriever(settings(server.uri()), FakeServer.credentials("k"),
                     HttpClient.newHttpClient());
             assertThatThrownBy(() -> retriever.search("x", 1)).isInstanceOf(AiBackendException.class)
                     .hasMessage("Azure AI Search returned an unexpected response");

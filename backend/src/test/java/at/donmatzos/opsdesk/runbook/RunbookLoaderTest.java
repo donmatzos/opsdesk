@@ -31,7 +31,8 @@ public class RunbookLoaderTest {
 
     @Test
     public void shouldFailWhenNoRunbookIsFound() {
-        assertThatThrownBy(() -> loader("classpath:nothing-here/*.md").load())
+        var loader = loader("classpath:nothing-here/*.md");
+        assertThatThrownBy(loader::load)
                 .isInstanceOf(IllegalStateException.class);
     }
 }

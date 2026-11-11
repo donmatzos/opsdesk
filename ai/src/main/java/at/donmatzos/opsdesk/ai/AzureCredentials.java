@@ -2,7 +2,7 @@
 package at.donmatzos.opsdesk.ai;
 
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /**
  * Where the API keys come from. The keys live in the environment (locally {@code deploy/compose/.env}, in a cluster a
@@ -15,7 +15,7 @@ public interface AzureCredentials {
     String searchApiKey();
 
     /** Reads {@code AZURE_OPENAI_API_KEY} and {@code AZURE_SEARCH_API_KEY} from {@code env} on every call. */
-    static AzureCredentials fromEnvironment(Function<String, String> env) {
+    static AzureCredentials fromEnvironment(UnaryOperator<String> env) {
         Objects.requireNonNull(env);
         return new AzureCredentials() {
             @Override
@@ -35,7 +35,7 @@ public interface AzureCredentials {
         };
     }
 
-    private static String required(Function<String, String> env, String name) {
+    private static String required(UnaryOperator<String> env, String name) {
         String value = env.apply(name);
         if (value == null || value.isBlank()) {
             throw new AiBackendException(name + " is not set");

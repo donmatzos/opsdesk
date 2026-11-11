@@ -28,7 +28,8 @@ public class AzureHttpTest {
     public void shouldNameServiceAndStatusButNeverBodyOrKey() throws Exception {
         String key = UUID.randomUUID().toString();
         try (var server = new FakeServer(429, "limit " + key)) {
-            assertThatThrownBy(() -> http.postJson("Svc", server.uri(), key, "{}"))
+            URI uri = server.uri();
+            assertThatThrownBy(() -> http.postJson("Svc", uri, key, "{}"))
                     .isInstanceOf(AiBackendException.class).hasMessage("Svc returned HTTP 429");
         }
     }
@@ -36,10 +37,12 @@ public class AzureHttpTest {
     @Test
     public void shouldMapUnparsableBodiesAndUnreachableHosts() throws Exception {
         try (var server = new FakeServer(200, "not json")) {
-            assertThatThrownBy(() -> http.postJson("Svc", server.uri(), "k", "{}"))
+            URI uri = server.uri();
+            assertThatThrownBy(() -> http.postJson("Svc", uri, "k", "{}"))
                     .isInstanceOf(AiBackendException.class).hasMessage("Svc returned an unexpected response");
         }
-        assertThatThrownBy(() -> http.postJson("Svc", URI.create("http://127.0.0.1:1"), "k", "{}"))
+        URI nothingListens = URI.create("http://127.0.0.1:1");
+        assertThatThrownBy(() -> http.postJson("Svc", nothingListens, "k", "{}"))
                 .isInstanceOf(AiBackendException.class).hasMessage("Svc is not reachable");
     }
 }

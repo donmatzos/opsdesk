@@ -73,7 +73,6 @@ public class AzureSettingsTest {
 
     @Test
     public void shouldStripTrailingSlashFromEndpoints() {
-        assertThat(AzureSettings.from(full()::get).searchEndpoint().toString())
-                .isEqualTo("https://search.example.test");
+        assertThat(AzureSettings.from(full()::get).searchEndpoint()).hasToString("https://search.example.test");
     }
 }

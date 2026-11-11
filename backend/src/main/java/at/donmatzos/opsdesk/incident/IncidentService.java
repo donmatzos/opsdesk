@@ -55,12 +55,16 @@ public class IncidentService {
 
     @Transactional(readOnly = true)
     public Incident get(long id) {
+        return find(id);
+    }
+
+    private Incident find(long id) {
         return incidents.findById(id).orElseThrow(() -> new NotFoundException("Incident", id));
     }
 
     @Transactional
     public Incident changeState(long id, IncidentState next) {
-        Incident current = get(id);
+        Incident current = find(id);
         Instant now = clock.instant();
         Incident changed = incidents.save(current.transitionTo(next, now));
         events.publishEvent(new IncidentStateChanged(changed.id(), changed.severity(), current.state(), next,
