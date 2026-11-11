@@ -31,13 +31,14 @@ const FILTERS: { value: Filter; label: string }[] = [
     } @else if (!services.value()?.length) {
       <p class="state-text">No services are monitored yet.</p>
     } @else {
-      <div class="chips" role="group" aria-label="Filter by status">
+      <fieldset class="chips">
+        <legend class="visually-hidden">Filter by status</legend>
         @for (f of filters; track f.value) {
           <button type="button" class="chip" [attr.aria-pressed]="filter() === f.value" (click)="filter.set(f.value)">
             {{ f.label }} <span class="count">{{ counts()[f.value] }}</span>
           </button>
         }
-      </div>
+      </fieldset>
       <div class="card table-card">
         <table class="table-cards">
           <caption class="visually-hidden">Monitored services</caption>
