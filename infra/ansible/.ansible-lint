@@ -1,0 +1,5 @@
+# MOCK: Ansible Tower/AWX — lint rules for the playbook. No `noqa`, no skipped rules.
+---
+profile: production
+exclude_paths:
+  - collections/

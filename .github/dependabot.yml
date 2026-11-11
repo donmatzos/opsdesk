@@ -35,5 +35,6 @@ updates:
     directories:
       - /infra/terraform/datadog
       - /infra/terraform/azure
+      - /infra/terraform/awx
     schedule: { interval: weekly }
     labels: [dependencies]

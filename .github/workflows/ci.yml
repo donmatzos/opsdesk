@@ -32,7 +32,7 @@ jobs:
     secrets: inherit
 
   context-check:
-    name: Context, contrast and guide check
+    name: Context, contrast, guide and docs check
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -41,6 +41,7 @@ jobs:
       - run: python3 tools/context_check.py
       - run: python3 tools/contrast_check.py
       - run: python3 tools/guide_check.py
+      - run: python3 tools/docs_check.py
 
   secrets:
     name: Secret scan (gitleaks, full history)
@@ -96,13 +97,13 @@ jobs:
   terraform:
     name: Terraform ${{ matrix.dir }} (fmt, validate, tflint)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    # MOCK: Datadog monitors/dashboard and Azure OpenAI/AI Search are validated only; plan/apply never run (no accounts).
+    # MOCK: Datadog monitors/dashboard, Azure OpenAI/AI Search and AWX job templates are validated only; plan/apply never run (no accounts).
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        dir: [datadog, azure]
+        dir: [datadog, azure, awx]
     defaults:
       run:
         working-directory: infra/terraform/${{ matrix.dir }}
@@ -118,6 +119,16 @@ jobs:
         run: >-
           docker run --rm --entrypoint sh -v "$PWD:/data" -w /data ghcr.io/terraform-linters/tflint:v0.66.0
           -c 'tflint --init && tflint --format compact'
+
+  templates:
+    name: Pipeline templates and Ansible (lint)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # MOCK: the GitLab template, Jenkinsfile and Ansible playbook are validated only; no GitLab, Jenkins or AWX runs them.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: tools/ci-templates-check.sh all
 
   helm:
     name: Helm chart (lint, unit tests, schema)
@@ -235,6 +246,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
 
+      # Only the "opsdesk" package (sha-tagged CI images). Release images live in "opsdesk-release" (release.yml) and are never touched.
       - name: Keep only the newest 10 image versions
         uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
         with:

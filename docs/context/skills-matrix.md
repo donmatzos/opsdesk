@@ -5,17 +5,17 @@ Source: owner's resume (2026-11). Direction: DevOps with a software engineering 
 | Skill | Pri | Where it shows |
 |---|---|---|
 | GitHub Actions | A | `.github/workflows/`: build, test, scans, image, release; real and green |
-| CI templating (master thesis!) | A | `ci/gitlab/`: shared, reusable pipeline template + a consumer `.gitlab-ci.yml` configured only by variables; also reusable GH workflow (`workflow_call`) |
+| CI templating (master thesis!) | A | `ci/gitlab/` (done, mock): shared pipeline template + a consumer `.gitlab-ci.yml` configured only by variables, schema + job set checked in CI; also reusable GH workflow (`workflow_call`, real) |
 | Docker | A | multi-stage `Dockerfile`, non-root, arbitrary UID (OpenShift-safe), healthcheck |
 | Kubernetes / OpenShift, Helm | A | `deploy/helm/opsdesk` (Deployment, Service, Route/Ingress switch, probes, NetworkPolicy, values per stage); CI: `helm lint/template` always; `oc login` + `helm upgrade --install` + smoke test, gated on OpenShift secrets (off without a cluster; Red Hat Developer Sandbox can make it real) |
 | DevSecOps: Trivy, SonarQube, secrets | A | Trivy fs + image scan in CI; SonarCloud (free for public repos) or Sonar step mocked; secrets only via CI secrets; Dependabot |
 | Observability: Datadog, Elastic | A | Micrometer business metrics + `/actuator/prometheus` (real); ECS JSON logs with trace ids + local Elastic stack (Filebeat, Kibana) (real); Datadog registry, Unified Service Tagging, monitors/dashboard as Terraform (C) |
 | Terraform (IaC) | B | `infra/terraform/datadog` (monitors, dashboard; fmt/validate/tflint in CI, done) and `azure` (done, validate only); `apply` never runs |
-| Ansible Tower | C | `infra/ansible`: small playbook + Tower job template via Terraform `awx` provider (commented) |
-| Jenkins | C | `ci/jenkins/Jenkinsfile` (Groovy declarative), same stages as GH Actions |
-| Artifactory | C | Maven `distributionManagement` + Helm repo push, commented; real publish to GitHub Packages / GHCR |
-| Release + deploy per stage | B | tags -> GHCR image + Helm chart; values files `dev`/`prod` |
-| Incident analysis | B | `docs/runbooks/` (runbook + postmortem template); app has incidents as domain |
+| Ansible Tower | C | done (mock): `infra/ansible/playbooks/deploy.yml` (ansible-lint production profile), job templates in `infra/terraform/awx` (validate only) |
+| Jenkins | C | done (mock): `ci/jenkins/Jenkinsfile`, same stages as GH Actions, parsed in CI, credential ids only |
+| Artifactory | C | done (mock): Maven profile `artifactory`, publish steps in the GitLab template and the Jenkinsfile; real publish to GHCR / GitHub Releases |
+| Release + deploy per stage | B | done: `release.yml` (tag -> jar, GHCR image, chart, GitHub release; first tag pending), values files `dev`/`prod`, rollback runbook |
+| Incident analysis | B | done: `docs/runbooks/` (7 runbooks + postmortem template), `docs/postmortems/` (one real, blameless); app has incidents as domain |
 | Linux, Bash, Python, networking | B | `tools/` scripts (Bash smoke test, Python context check); NetworkPolicy, probes |
 
 ## Software engineering

@@ -1,0 +1,11 @@
+# APM (Agent Package Manager) manifest: the agent setup of this repository, reproducible with `apm install`.
+# The project's own skill lives in .claude/skills/ops-check; the one dependency is the superpowers skill set the project was built with.
+name: opsdesk
+version: 0.1.0
+description: Agent setup for opsdesk (service-status and incident desk with an MCP server)
+targets:
+  - claude
+  - copilot
+dependencies:
+  apm:
+    - obra/superpowers#22f0b463e7a5e579904dd6211a520321035526f7

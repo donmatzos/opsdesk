@@ -7,8 +7,10 @@ Rule: a mock must be **honest and realistic** — written the way the real integ
 | Azure resources | `infra/terraform/azure` (validate only, remote backend commented, no keys in outputs) | never applied |
 | OpenShift | Real chart + real CI deploy (`deploy-dev`) when switched on; prod values are a mock | `OPENSHIFT_DEPLOY=true` + secrets `OPENSHIFT_SERVER`/`OPENSHIFT_TOKEN`, var `OPENSHIFT_NAMESPACE` |
 | Datadog | Micrometer Datadog registry (profile `datadog`, key only from env `DATADOG_API_KEY`, `DatadogKeyCheck` fails fast); chart `datadog.enabled` (Unified Service Tagging, agent host, key from Secret); Terraform monitors + dashboard | profile `datadog`; chart value; Terraform validate only |
-| Artifactory | commented `distributionManagement`/Helm push; real: GHCR/GitHub Packages | - |
-| Ansible Tower | playbook + `awx` provider job template (commented) | - |
+| Artifactory | Maven profile `artifactory` (`distributionManagement` on `artifactory.example.com`, credentials only from a settings.xml written by the pipeline); GitLab `maven-deploy`/`helm-publish` and Jenkins `Publish` use it. Real: GHCR/GitHub Releases | `-Partifactory` + `ARTIFACTORY_ENABLED=true` (GitLab) |
+| Ansible Tower/AWX | `infra/ansible` (deploy playbook: Helm atomic upgrade, smoke test, rollback; ansible-lint profile production) + `infra/terraform/awx` (project, inventories, job templates per stage; validate only) | never run; AWX credential ids passed as a variable |
+| GitLab | `ci/gitlab` shared template + variables-only consumer (same stages as `ci.yml`) | schema + job-set check in CI job `templates`; never run |
+| Jenkins | `ci/jenkins/Jenkinsfile` (same stages, credential ids only) | Groovy parse in CI job `templates`; never run |
 Warning: `/api/assist` has no auth and no rate limit; with profile `azure` each call costs Azure requests. Close and/or throttle it before real use (Route/Ingress rule, auth, or rate limit).
 Keys: `AzureSettings` holds no secret; `AzureCredentials` looks the two keys up in the environment (Secret in a cluster, `.env` locally) on each request and keeps no copy.
 Marker comment: `MOCK: <thing> — <why>`. README lists every mock.

@@ -88,4 +88,26 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <!-- MOCK: Artifactory — no instance exists; real artifacts go to GHCR and GitHub Releases (release.yml), see docs/context/cloud-mocks.md.
+             Off by default. Credentials are never in this file: server id "artifactory" comes from a settings.xml that the
+             pipeline writes from ${env.ARTIFACTORY_USER} / ${env.ARTIFACTORY_TOKEN} (GitLab) or a Config File Provider (Jenkins). -->
+        <profile>
+            <id>artifactory</id>
+            <properties>
+                <artifactory.url>https://artifactory.example.com/artifactory</artifactory.url>
+            </properties>
+            <distributionManagement>
+                <repository>
+                    <id>artifactory</id>
+                    <url>${artifactory.url}/libs-release-local</url>
+                </repository>
+                <snapshotRepository>
+                    <id>artifactory</id>
+                    <url>${artifactory.url}/libs-snapshot-local</url>
+                </snapshotRepository>
+            </distributionManagement>
+        </profile>
+    </profiles>
 </project>
