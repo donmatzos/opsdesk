@@ -4,7 +4,7 @@
 | Module | Role | Depends on |
 |---|---|---|
 | `frontend` | Angular app, built by frontend-maven-plugin into `META-INF/resources` (or `static/`) of a jar | - |
-| `ai` | RAG: `RunbookIndex`, `Retriever`, `LlmClient`; mock + Azure adapters (profile `azure`, disabled) | - |
+| `ai` | Plain Java, no Spring (Jackson only): `ai.search` (`RunbookParser`, `Tokenizer`, `RunbookIndex` BM25, `Retriever`, Azure retriever/indexer), `ai.llm` (`LlmClient`, `MockLlmClient`, `PromptBuilder`, Azure client), `ai` (`RunbookAssistant`, `AzureSettings`). `docs/runbooks/*.md` are packaged into its jar | - |
 | `backend` | Spring Boot app: REST API, domain, MCP server (package `mcp`, `/mcp`), actuator; packages everything into `opsdesk.jar` | `frontend`, `ai` |
 
 ## Domain (minimal)
@@ -21,4 +21,4 @@ Persistence: PostgreSQL, Spring Data JDBC, Flyway (`db/migration`; demo data in 
 `default` (all local, mocks), `azure` (Azure adapters, disabled: no credentials), `datadog` (Datadog registry, disabled), `k8s` (probes/logging tuned for cluster).
 
 ## Data flow
-Browser -> Angular -> `/api/*` -> domain services. AI client -> `/mcp` (Spring AI MCP server, streamable HTTP, same jar) -> MCP tools (package `mcp`, bearer token, stateless) -> same domain services (`IncidentService`, repositories). `/api/assist` -> `Retriever` -> `LlmClient` (mock or Azure OpenAI).
+Browser -> Angular -> `/api/*` -> domain services. AI client -> `/mcp` (Spring AI MCP server, streamable HTTP, same jar) -> MCP tools (package `mcp`, bearer token, stateless) -> same domain services (`IncidentService`, repositories). `POST /api/assist` and MCP tool `search_runbooks` -> one `Retriever` bean (`RunbookIndex` or Azure AI Search, switched by profile `azure` in package `runbook`) -> `RunbookAssistant` -> `LlmClient` (mock or Azure OpenAI). Grounded: no hit -> fixed answer, no model call, no sources. The question is never logged.

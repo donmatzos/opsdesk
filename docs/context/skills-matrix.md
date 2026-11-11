@@ -10,7 +10,7 @@ Source: owner's resume (2026-11). Direction: DevOps with a software engineering 
 | Kubernetes / OpenShift, Helm | A | `deploy/helm/opsdesk` (Deployment, Service, Route/Ingress switch, probes, NetworkPolicy, values per stage); CI: `helm lint/template` always; `oc login` + `helm upgrade --install` + smoke test, gated on OpenShift secrets (off without a cluster; Red Hat Developer Sandbox can make it real) |
 | DevSecOps: Trivy, SonarQube, secrets | A | Trivy fs + image scan in CI; SonarCloud (free for public repos) or Sonar step mocked; secrets only via CI secrets; Dependabot |
 | Observability: Datadog, Elastic | A | Micrometer business metrics + `/actuator/prometheus` (real); ECS JSON logs with trace ids + local Elastic stack (Filebeat, Kibana) (real); Datadog registry, Unified Service Tagging, monitors/dashboard as Terraform (C) |
-| Terraform (IaC) | B | `infra/terraform/datadog` (monitors, dashboard; fmt/validate/tflint in CI, done) and `azure` (phase 6); `apply` never runs |
+| Terraform (IaC) | B | `infra/terraform/datadog` (monitors, dashboard; fmt/validate/tflint in CI, done) and `azure` (done, validate only); `apply` never runs |
 | Ansible Tower | C | `infra/ansible`: small playbook + Tower job template via Terraform `awx` provider (commented) |
 | Jenkins | C | `ci/jenkins/Jenkinsfile` (Groovy declarative), same stages as GH Actions |
 | Artifactory | C | Maven `distributionManagement` + Helm repo push, commented; real publish to GitHub Packages / GHCR |
@@ -33,8 +33,8 @@ Source: owner's resume (2026-11). Direction: DevOps with a software engineering 
 | Skill | Pri | Where it shows |
 |---|---|---|
 | MCP server development | A | done (phase 5): MCP server in the backend (`/mcp`, bearer token, 6 tools over services and incidents; `search_runbooks` in phase 6), `.mcp.json` for Claude Code, `tools/mcp-verify.sh` |
-| RAG | B | `ai` module: retrieval over `docs/runbooks/` with an in-memory index (real), answer composing behind an `LlmClient` interface |
-| Azure OpenAI, Azure AI Search | C | `ai` adapters behind interfaces, Spring profile `azure`, disabled; Terraform for the resources |
+| RAG | B | done (phase 6): BM25 retrieval over `docs/runbooks/` (real), grounded answers, `/api/assist` + MCP `search_runbooks`; answer composing behind `LlmClient` (mock) |
+| Azure OpenAI, Azure AI Search | C | done (mock): REST adapters tested against a fake server, profile `azure` (off, fails fast), Terraform validated in CI |
 | Agentic engineering, context engineering | A | this context system (`CLAUDE.md` router, small files, size check), `AGENTS.md` for Copilot/other agents, `.claude/skills/`, optional `apm.yml` |
 | TDD / subagent-driven dev | D | visible in commit history and plan docs, not in code |
 
