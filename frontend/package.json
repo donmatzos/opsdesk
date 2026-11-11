@@ -13,7 +13,9 @@
     "prebuild": "npm run copy-guide",
     "prewatch": "npm run copy-guide",
     "pretest": "npm run copy-guide",
-    "pretest:ci": "npm run copy-guide"
+    "pretest:ci": "npm run copy-guide",
+    "build:demo": "ng build --configuration demo",
+    "prebuild:demo": "npm run copy-guide"
   },
   "private": true,
   "dependencies": {
