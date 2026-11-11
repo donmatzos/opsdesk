@@ -10,7 +10,7 @@
 - `gitleaks dir` on the working tree reports `deploy/compose/.env` by design (it holds the real local password, never tracked).
 
 ## Before and after a push
-- Before pushing: `./mvnw verify` (exit code 0), `python3 tools/context_check.py`, `git diff --cached` for credentials. Re-read `conventions.md` "Sonar-proof code" against your diff.
-- After a push/merge, look at SonarCloud: `curl -s "https://sonarcloud.io/api/issues/search?componentKeys=donmatzos_opsdesk&resolved=false&ps=100"` (add `&branch=main` after a merge). Fix real findings; a false positive is marked in the Sonar UI or suppressed in code with a reason, never ignored silently.
+- Before pushing: `./mvnw verify` (exit code 0), `python3 tools/context_check.py`, `git diff --cached` for credentials. Re-read `conventions.md` "Issue-proof code" against your diff.
+- After a push/merge, look at SonarCloud: `curl -s "https://sonarcloud.io/api/issues/search?componentKeys=donmatzos_opsdesk&resolved=false&ps=100"` (add `&branch=main` after a merge). Fix real findings. Suppress or mark a false positive only after discussing it with the owner (see `conventions.md`), never on your own and never in advance.
 - Review your own change before the PR (`/code-review`): auth/cost exposure of new endpoints, partial failures of remote calls, id/key collisions, startup failures caused by optional features.
 
