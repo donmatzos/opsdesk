@@ -23,6 +23,12 @@ public class McpServerTest extends IntegrationTest {
     @Autowired
     private MeterRegistry registry;
 
+    @Autowired
+    private at.donmatzos.opsdesk.ai.search.Retriever retriever;
+
+    @Autowired
+    private RunbookTools runbookTools;
+
     /** The tool result is one text block holding a JSON array of services. */
     private static List<String> names(McpSchema.CallToolResult result) {
         var text = ((McpSchema.TextContent) result.content().getFirst()).text();
@@ -164,5 +170,32 @@ public class McpServerTest extends IntegrationTest {
             assertThat(JSON.readTree(text(blank)).get("incidents").valueStream().map(n -> n.get("id").asLong()))
                     .contains(id);
         }
+    }
+
+    @Test
+    public void shouldSearchRunbooksThroughMcp() {
+        try (McpSyncClient mcp = McpTestClient.connect(port, mcpToken())) {
+            McpSchema.Tool tool = mcp.listTools().tools().stream()
+                    .filter(t -> t.name().equals("search_runbooks")).findFirst().orElseThrow();
+            assertThat(tool.annotations().readOnlyHint()).isTrue();
+
+            McpSchema.CallToolResult result = mcp.callTool(new McpSchema.CallToolRequest("search_runbooks",
+                    Map.of("query", "pod readiness probe failing")));
+            assertThat(result.isError()).isFalse();
+            var text = ((McpSchema.TextContent) result.content().getFirst()).text();
+            assertThat(JSON.readTree(text).get("hits").get(0).get("runbook").asString()).isEqualTo("pod-not-ready");
+        }
+    }
+
+    @Test
+    public void shouldUseTheSameRetrieverAsAssist() {
+        var direct = retriever.search("database connection refused", 1).getFirst().chunk();
+        var text = ((McpSchema.TextContent) runbookTools.searchRunbooks("database connection refused", 1)
+                .content().getFirst()).text();
+        var viaTool = JSON.readTree(text).get("hits").get(0);
+        assertThat(viaTool.get("runbook").asString()).isEqualTo(direct.runbookId());
+        assertThat(viaTool.get("section").asString()).isEqualTo(direct.section());
+        Object target = org.springframework.test.util.AopTestUtils.getTargetObject(runbookTools);
+        assertThat(target).hasFieldOrPropertyWithValue("retriever", retriever);
     }
 }
