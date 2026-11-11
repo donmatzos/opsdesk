@@ -1,0 +1,116 @@
+<h1>Incidents</h1>
+
+<section aria-labelledby="open-heading">
+  <h2 id="open-heading">Open an incident</h2>
+  <form (submit)="submit($event)" novalidate>
+    <div class="field">
+      <label for="service">Service</label>
+      <select
+        #serviceSelect
+        id="service"
+        (change)="serviceId.set(serviceSelect.value)"
+        [attr.aria-invalid]="errors().service ? 'true' : null"
+        [attr.aria-describedby]="errors().service ? 'service-error' : null"
+      >
+        <option value="">Choose a service</option>
+        @for (service of services.value() ?? []; track service.id) {
+          <option [value]="service.id">{{ service.name }}</option>
+        }
+      </select>
+      @if (errors().service) {
+        <span id="service-error" class="field-error">{{ errors().service }}</span>
+      }
+    </div>
+
+    <div class="field">
+      <label for="severity">Severity</label>
+      <select #severitySelect id="severity" (change)="severity.set($any(severitySelect.value))">
+        @for (s of severities; track s) {
+          <option [value]="s" [selected]="s === severity()">{{ s }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="summary">Summary</label>
+      <input
+        #summaryInput
+        id="summary"
+        type="text"
+        maxlength="200"
+        autocomplete="off"
+        [value]="summary()"
+        (input)="summary.set(summaryInput.value)"
+        [attr.aria-invalid]="errors().summary ? 'true' : null"
+        [attr.aria-describedby]="errors().summary ? 'summary-error summary-hint' : 'summary-hint'"
+      />
+      <span id="summary-hint" class="hint">Up to 200 characters.</span>
+      @if (errors().summary) {
+        <span id="summary-error" class="field-error">{{ errors().summary }}</span>
+      }
+    </div>
+
+    <button type="submit" class="primary" [disabled]="submitting()">Open incident</button>
+  </form>
+
+  @if (serverError()) {
+    <div class="alert" role="alert">{{ serverError() }}</div>
+  }
+  <div aria-live="polite">
+    @if (announcement()) {
+      <p class="notice">{{ announcement() }}</p>
+    }
+  </div>
+</section>
+
+<section aria-labelledby="list-heading">
+  <h2 id="list-heading">All incidents</h2>
+  <div class="field">
+    <label for="state-filter">State</label>
+    <select #stateSelect id="state-filter" (change)="setFilter(stateSelect.value)">
+      <option value="">All states</option>
+      @for (s of states; track s) {
+        <option [value]="s">{{ s }}</option>
+      }
+    </select>
+  </div>
+
+  @if (incidents.isLoading()) {
+    <p class="state-text" role="status">Loading incidents…</p>
+  } @else if (incidents.error()) {
+    <div class="alert" role="alert">
+      <p>Incidents could not be loaded. Check that the backend is running, then try again.</p>
+      <button type="button" (click)="incidents.reload()">Try again</button>
+    </div>
+  } @else if (!incidents.value()?.length) {
+    <p class="state-text">No incidents match. Nothing is on fire.</p>
+  } @else {
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Incidents table">
+      <table>
+        <caption>Incidents, newest first</caption>
+        <thead>
+          <tr>
+            <th scope="col">Id</th>
+            <th scope="col">Service</th>
+            <th scope="col">Severity</th>
+            <th scope="col">State</th>
+            <th scope="col">Summary</th>
+            <th scope="col">Opened</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (incident of incidents.value(); track incident.id) {
+            <tr>
+              <td class="mono">#{{ incident.id }}</td>
+              <td class="mono">{{ serviceNames().get(incident.serviceId) ?? 'service ' + incident.serviceId }}</td>
+              <td><app-status-badge [value]="incident.severity" /></td>
+              <td><app-status-badge [value]="incident.state" /></td>
+              <td><a [routerLink]="['/incidents', incident.id]">{{ incident.summary }}</a></td>
+              <td class="mono">{{ incident.openedAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

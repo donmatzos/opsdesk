@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { environment } from '../environments/environment';
 import { ServicesPage } from './catalog/services-page';
+import { IncidentDetailPage } from './incidents/incident-detail-page';
 import { IncidentsPage } from './incidents/incidents-page';
 import { NotFoundPage } from './shared/not-found-page';
 import { PlaceholderPage } from './shared/placeholder-page';
@@ -11,7 +12,7 @@ export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: environment.homeRoute },
   { path: 'services', component: ServicesPage, title: 'Services' },
   { path: 'incidents', component: IncidentsPage, title: 'Incidents' },
-  { path: 'incidents/:id', component: IncidentsPage, title: 'Incident' },
+  { path: 'incidents/:id', component: IncidentDetailPage, title: 'Incident' },
   { path: 'assist', component: PlaceholderPage, title: 'Ask the runbooks' },
   { path: 'guide', component: PlaceholderPage, title: 'Project guide' },
   { path: 'guide/architecture', component: PlaceholderPage, title: 'Architecture' },

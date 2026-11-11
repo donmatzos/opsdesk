@@ -57,3 +57,33 @@ button, .button {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
+
+// Tables: caption, header cells with scope, own horizontal scroll region (never the page).
+.table-scroll { overflow-x: auto; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+
+  caption { text-align: left; font-weight: 600; padding: 0 0 0.5rem; }
+  th, td { text-align: left; padding: 0.625rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 0.875rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
+}
+
+// Forms and messages.
+.field { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1rem; max-width: 36rem; }
+.field label { font-weight: 600; }
+.field .hint { color: var(--muted); font-size: 0.875rem; }
+input, select, textarea {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+.field-error { color: var(--danger); font-size: 0.875rem; font-weight: 600; }
+.alert { border: 1px solid var(--danger); border-left-width: 4px; border-radius: var(--radius); padding: 0.75rem 1rem; margin: 1rem 0; max-width: 48rem; }
+.notice { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: var(--radius); padding: 0.75rem 1rem; margin: 1rem 0; max-width: 48rem; }
+.state-text { color: var(--muted); }
