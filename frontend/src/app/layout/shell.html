@@ -1,0 +1,57 @@
+<a class="skip" href="#main" (click)="skipToMain($event)">Skip to main content</a>
+
+@if (demo) {
+  <p class="demo-banner" role="note">Demo: runs in your browser with simulated data. Changes reset on reload.</p>
+}
+
+<header class="topbar">
+  <button
+    type="button"
+    class="menu-toggle"
+    [attr.aria-expanded]="menuOpen()"
+    aria-controls="site-nav"
+    (click)="toggleMenu()"
+  >
+    <app-icon [name]="menuOpen() ? 'x' : 'menu'" />
+    <span>Menu</span>
+  </button>
+  <a class="brand" routerLink="/">opsdesk</a>
+  <a class="repo" [href]="repoUrl" target="_blank" rel="noopener noreferrer">
+    Source on GitHub<span class="visually-hidden"> (opens in a new tab)</span>
+    <app-icon name="external-link" />
+  </a>
+</header>
+
+<div class="layout">
+  <nav id="site-nav" class="sidebar" [class.open]="menuOpen()" aria-label="Main">
+    @for (group of groups; track group.label) {
+      <section>
+        <h2>{{ group.label }}</h2>
+        <ul>
+          @for (item of group.items; track item.route) {
+            <li>
+              <a
+                [routerLink]="item.route"
+                routerLinkActive="active"
+                ariaCurrentWhenActive="page"
+                [routerLinkActiveOptions]="{ exact: item.route === '/guide' }"
+                (click)="closeMenu()"
+              >
+                <app-icon [name]="item.icon" />
+                {{ item.label }}
+              </a>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </nav>
+
+  <main id="main" tabindex="-1">
+    <router-outlet />
+  </main>
+</div>
+
+<footer class="footer">
+  <p>opsdesk is a showcase project. Cloud parts are mocked; see the project guide.</p>
+</footer>

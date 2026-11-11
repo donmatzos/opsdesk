@@ -33,4 +33,7 @@ curl -s localhost:8080/api/assist -H 'Content-Type: application/json' -d '{"ques
 
 The answer is composed by a **mock** model (`"mock": true`) unless profile `azure` is set. That profile switches to Azure OpenAI and Azure AI Search adapters, which have only been tested against a local fake server, plus Terraform in `infra/terraform/azure` that is validated in CI but never applied. See `docs/context/cloud-mocks.md`.
 
+## Project guide
+A guided tour of the repository (architecture, what each part shows, design and accessibility, glossary with sources) lives in [`docs/guide/`](docs/guide/index.md). The same files are rendered inside the app, and the app is also published as a static demo that runs in the browser with simulated data: <https://donmatzos.github.io/opsdesk/> (available once GitHub Pages is switched on, see `docs/context/status.md`).
+
 <!-- TODO: architecture diagram, quick start, "what this shows" table (from docs/context/skills-matrix.md) -->

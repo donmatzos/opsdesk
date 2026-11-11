@@ -1,38 +1,62 @@
-import { Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { Component, computed, inject } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { StatusBadge } from '../shared/status-badge';
 import { CatalogApi } from './catalog-api';
+
+const ORDER = ['UP', 'DEGRADED', 'DOWN'] as const;
 
 @Component({
   selector: 'app-services-page',
+  imports: [StatusBadge],
   template: `
     <h1>Services</h1>
-    <table>
-      <thead>
-        <tr><th>Name</th><th>Owner</th><th>Stage</th><th>Status</th></tr>
-      </thead>
-      <tbody>
-        @for (service of services(); track service.id) {
-          <tr>
-            <td>{{ service.name }}</td>
-            <td>{{ service.ownerTeam }}</td>
-            <td>{{ service.stage }}</td>
-            <td><span class="status" [class]="service.status.toLowerCase()">{{ service.status }}</span></td>
-          </tr>
-        } @empty {
-          <tr><td colspan="4">No services.</td></tr>
-        }
-      </tbody>
-    </table>
-  `,
-  styles: `
-    table { border-collapse: collapse; width: 100%; }
-    th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #e2e8f0; }
-    .status { font-weight: 600; }
-    .up { color: #15803d; }
-    .degraded { color: #b45309; }
-    .down { color: #b91c1c; }
+    @if (services.isLoading()) {
+      <output class="state-text">Loading services…</output>
+    } @else if (services.error()) {
+      <div class="alert" role="alert">
+        <p>Services could not be loaded. Check that the backend is running, then try again.</p>
+        <button type="button" (click)="services.reload()">Try again</button>
+      </div>
+    } @else if (!services.value()?.length) {
+      <p class="state-text">No services are monitored yet.</p>
+    } @else {
+      <p class="summary">{{ summary() }}</p>
+      <section class="table-scroll" tabindex="0" aria-label="Services table">
+        <table>
+          <caption>Monitored services</caption>
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Owner</th>
+              <th scope="col">Stage</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (service of services.value(); track service.id) {
+              <tr>
+                <td class="mono">{{ service.name }}</td>
+                <td>{{ service.ownerTeam }}</td>
+                <td>{{ service.stage }}</td>
+                <td><app-status-badge [value]="service.status" /></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
   `,
 })
 export class ServicesPage {
-  protected readonly services = toSignal(inject(CatalogApi).services(), { initialValue: [] });
+  private readonly api = inject(CatalogApi);
+
+  protected readonly services = rxResource({ stream: () => this.api.services() });
+
+  /** "4 services: 2 UP, 1 DEGRADED, 1 DOWN" as text, so the overview does not depend on colour or icons. */
+  protected readonly summary = computed(() => {
+    const all = this.services.value() ?? [];
+    const counts = ORDER.map((s) => [s, all.filter((x) => x.status === s).length] as const).filter(([, n]) => n > 0);
+    const parts = counts.map(([s, n]) => n + ' ' + s);
+    return `${all.length} ${all.length === 1 ? 'service' : 'services'}: ${parts.join(', ')}`;
+  });
 }
