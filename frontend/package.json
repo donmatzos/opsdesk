@@ -35,7 +35,7 @@
     "@angular/build": "^22.2.6",
     "@angular/cli": "^22.2.6",
     "@angular/compiler-cli": "^22.2.0",
-    "@types/node": "24.19.2",
+    "@types/node": "26.6.6",
     "@vitest/coverage-v8": "^5.1.0",
     "axe-core": "4.14.0",
     "jsdom": "^30.0.0",
