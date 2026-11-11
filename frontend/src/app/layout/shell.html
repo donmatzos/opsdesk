@@ -32,7 +32,7 @@
 </header>
 
 <div class="layout">
-  <div class="scrim" [class.visible]="menuOpen()" (click)="closeMenu()" aria-hidden="true"></div>
+  <button type="button" class="scrim" [class.visible]="menuOpen()" aria-label="Close menu" tabindex="-1" (click)="closeMenu()"></button>
 
   <nav #siteNav id="site-nav" class="sidebar" [class.open]="menuOpen()" aria-label="Main">
     @for (group of groups; track group.label) {
