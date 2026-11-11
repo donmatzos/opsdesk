@@ -12,10 +12,17 @@ public final class RunbookParser {
     private RunbookParser() {
     }
 
+    private static String fenceMarker(String trimmedLine) {
+        if (trimmedLine.startsWith("```")) {
+            return "```";
+        }
+        return trimmedLine.startsWith("~~~") ? "~~~" : null;
+    }
+
     /** Tracks code fences (``` or ~~~): returns the open marker, or null outside a fence. */
     private static String nextFenceState(String open, String line) {
         String t = line.stripLeading();
-        String marker = t.startsWith("```") ? "```" : t.startsWith("~~~") ? "~~~" : null;
+        String marker = fenceMarker(t);
         if (marker == null) {
             return open;
         }

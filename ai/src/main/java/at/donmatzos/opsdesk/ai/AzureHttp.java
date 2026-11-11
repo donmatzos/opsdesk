@@ -55,7 +55,7 @@ public final class AzureHttp {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new AiBackendException(service + " call was interrupted", e);
-        } catch (JacksonException e) {
+        } catch (JacksonException _) {
             throw new AiBackendException(service + " returned an unexpected response");
         }
     }

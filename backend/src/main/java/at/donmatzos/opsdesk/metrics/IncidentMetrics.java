@@ -34,7 +34,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class IncidentMetrics {
 
     private static final Logger log = LoggerFactory.getLogger(IncidentMetrics.class);
-    private static final IncidentState[] ACTIVE = {IncidentState.OPEN, IncidentState.MITIGATED};
+    private static final IncidentState[] ACTIVE_STATES = {IncidentState.OPEN, IncidentState.MITIGATED};
 
     private final IncidentRepository incidents;
     private final Map<Severity, Counter> opened = new EnumMap<>(Severity.class);
@@ -56,7 +56,7 @@ public class IncidentMetrics {
                             Duration.ofDays(1), Duration.ofDays(7))
                     .register(registry));
         }
-        for (IncidentState state : ACTIVE) {
+        for (IncidentState state : ACTIVE_STATES) {
             AtomicReference<Double> value = new AtomicReference<>(Double.NaN);
             active.put(state, value);
             Gauge.builder("opsdesk.incidents.active", value, AtomicReference::get)
@@ -69,7 +69,7 @@ public class IncidentMetrics {
     @Scheduled(initialDelayString = "${opsdesk.metrics.active-refresh-initial-delay:PT5S}",
             fixedDelayString = "${opsdesk.metrics.active-refresh:PT15S}")
     public void refreshActiveIncidents() {
-        for (IncidentState state : ACTIVE) {
+        for (IncidentState state : ACTIVE_STATES) {
             try {
                 active.get(state).set((double) incidents.countByState(state));
             } catch (RuntimeException e) {

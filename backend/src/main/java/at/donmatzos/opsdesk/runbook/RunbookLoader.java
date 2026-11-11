@@ -48,7 +48,7 @@ public class RunbookLoader {
     private Resource[] find() throws IOException {
         try {
             return ResourcePatternUtils.getResourcePatternResolver(loader).getResources(location);
-        } catch (FileNotFoundException e) {
+        } catch (FileNotFoundException _) {
             return new Resource[0];
         }
     }

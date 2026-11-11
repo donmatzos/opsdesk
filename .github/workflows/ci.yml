@@ -264,8 +264,9 @@ jobs:
       - name: Install oc ${{ env.OC_VERSION }} (checksum verified)
         run: |
           base="https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OC_VERSION}"
-          curl -fsSLO "${base}/openshift-client-linux.tar.gz"
-          curl -fsSL "${base}/sha256sum.txt" | grep ' openshift-client-linux.tar.gz$' | sha256sum -c -
+          # --proto =https: a redirect may never downgrade to plain http
+          curl --proto '=https' --tlsv1.2 -fsSLO "${base}/openshift-client-linux.tar.gz"
+          curl --proto '=https' --tlsv1.2 -fsSL "${base}/sha256sum.txt" | grep ' openshift-client-linux.tar.gz$' | sha256sum -c -
           sudo tar -xzf openshift-client-linux.tar.gz -C /usr/local/bin oc
           oc version --client
 

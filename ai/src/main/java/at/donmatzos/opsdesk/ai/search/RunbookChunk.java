@@ -15,7 +15,7 @@ public record RunbookChunk(String id, String runbookId, String title, String sec
     }
 
     public static String idFor(String runbookId, String section) {
-        String slug = section.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
+        String slug = section.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-)|(-$)", "");
         return runbookId + "--" + (slug.isEmpty() ? "section" : slug);
     }
 

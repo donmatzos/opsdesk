@@ -1,6 +1,7 @@
 package at.donmatzos.opsdesk.ai.llm;
 
 import at.donmatzos.opsdesk.ai.search.RetrievedChunk;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -27,12 +28,23 @@ public final class MockLlmClient implements LlmClient {
         String[] lines = text.strip().split("\n");
         String out;
         if (lines.length > 0 && lines[0].startsWith("- ")) {
-            out = String.join(" ", java.util.Arrays.stream(lines).limit(3).toList());
+            out = String.join(" ", Arrays.stream(lines).limit(3).toList());
         } else {
-            String flat = text.strip().replaceAll("\\s+", " ");
-            var m = java.util.regex.Pattern.compile("^(.*?[.!?])(\\s+.*?[.!?])?(\\s|$)").matcher(flat);
-            out = m.find() ? (m.group(1) + (m.group(2) == null ? "" : m.group(2))) : flat;
+            out = firstSentences(text.strip().replaceAll("\\s+", " "), 2);
         }
         return out.length() > MAX_EXCERPT ? out.substring(0, MAX_EXCERPT) : out;
+    }
+
+    /** The first {@code count} sentences (ending in . ! or ? before a space or the end), or all text if fewer. */
+    private static String firstSentences(String flat, int count) {
+        int found = 0;
+        for (int i = 0; i < flat.length(); i++) {
+            char c = flat.charAt(i);
+            boolean end = c == '.' || c == '!' || c == '?';
+            if (end && (i + 1 == flat.length() || flat.charAt(i + 1) == ' ') && ++found == count) {
+                return flat.substring(0, i + 1);
+            }
+        }
+        return flat;
     }
 }

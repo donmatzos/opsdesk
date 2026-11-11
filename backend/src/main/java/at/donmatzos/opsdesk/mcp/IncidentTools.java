@@ -56,6 +56,8 @@ class IncidentTools {
                     If the name is unknown, the result is an error; call list_services for valid names. Read-only.""",
             annotations = @McpAnnotations(readOnlyHint = true, destructiveHint = false, idempotentHint = true,
                     openWorldHint = false))
+    // MCP derives the tool parameter names from the Java names; snake_case is the documented tool interface.
+    @SuppressWarnings("java:S117")
     CallToolResult getServiceStatus(
             @McpToolParam(description = "Exact service name, for example billing-api. Case-sensitive.")
             String service_name) {
@@ -104,6 +106,8 @@ class IncidentTools {
                     with list_active_incidents or just opened. Unknown ids return an error. Read-only.""",
             annotations = @McpAnnotations(readOnlyHint = true, destructiveHint = false, idempotentHint = true,
                     openWorldHint = false))
+    // MCP derives the tool parameter names from the Java names; snake_case is the documented tool interface.
+    @SuppressWarnings("java:S117")
     CallToolResult getIncident(
             @McpToolParam(description = "Numeric incident id, as returned by list_active_incidents or open_incident.")
             long incident_id) {
@@ -118,6 +122,8 @@ class IncidentTools {
                     Unknown service names, invalid severities and invalid summaries return an error.""",
             annotations = @McpAnnotations(readOnlyHint = false, destructiveHint = false, idempotentHint = false,
                     openWorldHint = false))
+    // MCP derives the tool parameter names from the Java names; snake_case is the documented tool interface.
+    @SuppressWarnings("java:S117")
     CallToolResult openIncident(
             @McpToolParam(description = "Exact service name from list_services, for example billing-api.")
             String service_name,
@@ -151,6 +157,8 @@ class IncidentTools {
                     transitions and unknown ids return an error. Writes data; it is not safe to repeat blindly.""",
             annotations = @McpAnnotations(readOnlyHint = false, destructiveHint = false, idempotentHint = false,
                     openWorldHint = false))
+    // MCP derives the tool parameter names from the Java names; snake_case is the documented tool interface.
+    @SuppressWarnings("java:S117")
     CallToolResult changeIncidentState(
             @McpToolParam(description = "Numeric incident id, as returned by list_active_incidents or open_incident.")
             long incident_id,
