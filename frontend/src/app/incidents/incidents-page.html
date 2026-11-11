@@ -90,13 +90,14 @@
     <button type="button" (click)="incidents.reload()">Try again</button>
   </div>
 } @else {
-  <div class="chips" role="group" aria-label="Filter by state">
+  <fieldset class="chips">
+    <legend class="visually-hidden">Filter by state</legend>
     @for (f of filters; track f.value) {
       <button type="button" class="chip" [attr.aria-pressed]="filter() === f.value" (click)="filter.set(f.value)">
         {{ f.label }} <span class="count">{{ counts()[f.value] }}</span>
       </button>
     }
-  </div>
+  </fieldset>
 
   <div class="card table-card">
     <table class="table-cards">

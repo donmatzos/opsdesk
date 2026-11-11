@@ -25,7 +25,7 @@ function parseItem(line: string, ctx: LinkContext): AnswerItem | undefined {
     return undefined;
   }
   // The mock flattens list items into "- a - b"; show them as separate points instead.
-  const text = line.slice(colon + 2).replace(/^- /, '').split(' - ').join(' • ');
+  const text = line.slice(colon + 2).replace(/^- /, '').replaceAll(' - ', ' • ');
   return { n, label: line.slice(close + 2, colon), html: renderMarkdown(text, ctx) };
 }
 

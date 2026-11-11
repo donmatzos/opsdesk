@@ -34,9 +34,9 @@ export class ThemeService {
 
   private apply(preference: ThemePreference): void {
     if (preference === 'system') {
-      this.root.removeAttribute('data-theme');
+      delete this.root.dataset['theme'];
     } else {
-      this.root.setAttribute('data-theme', preference);
+      this.root.dataset['theme'] = preference;
     }
   }
 
