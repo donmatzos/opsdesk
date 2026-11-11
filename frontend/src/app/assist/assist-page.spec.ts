@@ -5,7 +5,8 @@ import { expectNoAxeViolations } from '../../testing/axe';
 import { AssistPage } from './assist-page';
 
 const ANSWER = {
-  answer: 'MOCK answer (no language model was called). The most relevant runbook sections:\n[1] Pod not ready / Symptoms: ...',
+  answer:
+    'MOCK answer (no language model was called). The most relevant runbook sections:\n[1] Pod not ready / Symptoms: - The readiness probe fails: `/readyz` is not 200. - `CrashLoopBackOff` in `oc get pods`.',
   sources: [
     { runbook: 'pod-not-ready', title: 'Pod not ready', section: 'Symptoms', path: 'docs/runbooks/pod-not-ready.md', score: 2.5 },
     { runbook: 'http-errors', title: 'HTTP errors (5xx)', section: 'First checks', path: 'docs/runbooks/http-errors.md', score: 1.1 },
@@ -41,18 +42,31 @@ describe('AssistPage', () => {
     expect(area.getAttribute('maxlength')).toBe('500');
   });
 
-  it('sends the question, shows the answer, a mock badge and source links to the repo', async () => {
+  it('sends the question, shows a formatted answer, one mock badge and source cards linking to the repo', async () => {
     const { fixture, el } = render();
     ask(el, 'pod not ready');
     http.expectOne('/api/assist').flush(ANSWER);
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(el.querySelector('[aria-live="polite"]')?.textContent).toContain('MOCK answer');
-    expect(el.textContent).toContain('Mock answer');
-    const links = Array.from(el.querySelectorAll('ul a')) as HTMLAnchorElement[];
+    const live = el.querySelector('[aria-live="polite"]') as HTMLElement;
+    expect(live.querySelector('.answer-item code')?.textContent).toBe('/readyz');
+    expect(live.querySelector('.card-body')?.textContent).not.toContain('no language model was called');
+    expect(el.textContent?.match(/Mock answer/g)?.length).toBe(1);
+    const links = Array.from(el.querySelectorAll('.source-card a')) as HTMLAnchorElement[];
     expect(links.length).toBe(2);
     expect(links[0].getAttribute('href')).toBe('https://github.com/donmatzos/opsdesk/blob/main/docs/runbooks/pod-not-ready.md');
     expect(links[0].textContent).toContain('Pod not ready');
+    expect(links[0].textContent).toContain('Symptoms');
+  });
+
+  it('offers example questions that ask right away', () => {
+    const { el } = render();
+    const chips = Array.from(el.querySelectorAll('.example-chips button')) as HTMLButtonElement[];
+    expect(chips.length).toBeGreaterThanOrEqual(3);
+    chips[0].click();
+    const req = http.expectOne('/api/assist');
+    expect(req.request.body.question).toBe(chips[0].textContent?.trim());
+    req.flush(ANSWER);
   });
 
   it('disables the button while the request is pending', () => {
