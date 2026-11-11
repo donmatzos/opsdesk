@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { CatalogApi } from '../catalog/catalog-api';
 import { httpStatus, problemMessage } from '../shared/problem';
 import { StatusBadge } from '../shared/status-badge';
+import { relativeTime } from '../shared/relative-time';
 import { IncidentApi, IncidentState, allowedTransitions } from './incident-api';
 
 const ACTION_LABEL: Record<IncidentState, string> = {
@@ -17,7 +18,7 @@ const ACTION_LABEL: Record<IncidentState, string> = {
   selector: 'app-incident-detail-page',
   imports: [DatePipe, RouterLink, StatusBadge],
   template: `
-    <p><a routerLink="/incidents">All incidents</a></p>
+    <p class="back"><a routerLink="/incidents">All incidents</a></p>
     @if (incident.isLoading()) {
       <output class="state-text">Loading incident…</output>
     } @else if (notFound()) {
@@ -29,33 +30,67 @@ const ACTION_LABEL: Record<IncidentState, string> = {
         <button type="button" (click)="incident.reload()">Try again</button>
       </div>
     } @else if (incident.value(); as current) {
-      <h1>Incident #{{ current.id }}</h1>
-      <dl class="details">
-        <dt>Service</dt>
-        <dd class="mono">{{ serviceName() }}</dd>
-        <dt>Severity</dt>
-        <dd><app-status-badge [value]="current.severity" /></dd>
-        <dt>State</dt>
-        <dd><app-status-badge [value]="current.state" /></dd>
-        <dt>Summary</dt>
-        <dd>{{ current.summary }}</dd>
-        <dt>Opened</dt>
-        <dd class="mono">{{ current.openedAt | date: 'yyyy-MM-dd HH:mm' }}</dd>
-        <dt>Resolved</dt>
-        <dd class="mono">{{ current.resolvedAt ? (current.resolvedAt | date: 'yyyy-MM-dd HH:mm') : 'not yet' }}</dd>
-      </dl>
+      <header class="page-header head">
+        <div>
+          <h1>Incident #{{ current.id }}</h1>
+          <p class="lede">{{ current.summary }}</p>
+        </div>
+        <span class="badges">
+          <app-status-badge [value]="current.severity" />
+          <app-status-badge [value]="current.state" />
+        </span>
+      </header>
 
-      @if (transitions().length) {
-        <h2>Change state</h2>
-        <p class="hint">Incidents only move forward; a resolved incident is never reopened.</p>
-        <p>
-          @for (next of transitions(); track next) {
-            <button type="button" [class.primary]="next === 'RESOLVED'" [disabled]="busy()" (click)="change(next)">
-              {{ label(next) }}
-            </button>
+      <div class="columns">
+        <section class="card" aria-labelledby="details-heading">
+          <div class="card-head"><h2 id="details-heading">Details</h2></div>
+          <dl class="details">
+            <dt>Service</dt>
+            <dd class="mono">{{ serviceName() }}</dd>
+            <dt>Severity</dt>
+            <dd><app-status-badge [value]="current.severity" /></dd>
+            <dt>State</dt>
+            <dd><app-status-badge [value]="current.state" /></dd>
+            <dt>Summary</dt>
+            <dd>{{ current.summary }}</dd>
+            <dt>Opened</dt>
+            <dd class="mono">{{ current.openedAt | date: 'yyyy-MM-dd HH:mm' }}</dd>
+            <dt>Resolved</dt>
+            <dd class="mono">{{ current.resolvedAt ? (current.resolvedAt | date: 'yyyy-MM-dd HH:mm') : 'not yet' }}</dd>
+          </dl>
+        </section>
+
+        <section class="card" aria-labelledby="timeline-heading">
+          <div class="card-head"><h2 id="timeline-heading">Timeline</h2></div>
+          <ol class="timeline">
+            <li>
+              <strong>Opened</strong> <time [attr.datetime]="current.openedAt">{{ ago(current.openedAt) }}</time>
+              <span class="meta">{{ current.openedAt | date: 'yyyy-MM-dd HH:mm' }}</span>
+            </li>
+            @if (current.resolvedAt) {
+              <li>
+                <strong>Resolved</strong> <time [attr.datetime]="current.resolvedAt">{{ ago(current.resolvedAt) }}</time>
+                <span class="meta">{{ current.resolvedAt | date: 'yyyy-MM-dd HH:mm' }}</span>
+              </li>
+            } @else {
+              <li><strong>Now:</strong> {{ current.state }}</li>
+            }
+          </ol>
+          @if (transitions().length) {
+            <div class="card-body">
+              <h3 class="small">Change state</h3>
+              <p class="hint">Incidents only move forward; a resolved incident is never reopened.</p>
+              <p class="actions">
+                @for (next of transitions(); track next) {
+                  <button type="button" [class.primary]="next === 'RESOLVED'" [disabled]="busy()" (click)="change(next)">
+                    {{ label(next) }}
+                  </button>
+                }
+              </p>
+            </div>
           }
-        </p>
-      }
+        </section>
+      </div>
     }
 
     @if (error()) {
@@ -68,11 +103,17 @@ const ACTION_LABEL: Record<IncidentState, string> = {
     </div>
   `,
   styles: `
-    .details { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1.5rem; max-width: 48rem; }
+    .columns { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
+    @media (max-width: 899px) { .columns { grid-template-columns: minmax(0, 1fr); } }
+    .badges { display: inline-flex; gap: 0.5rem; }
+    .details { display: grid; grid-template-columns: max-content 1fr; gap: 0.75rem 1.5rem; margin: 0; padding: 0 1rem 1rem; }
     dt { color: var(--muted); font-weight: 600; }
     dd { margin: 0; }
-    .hint { color: var(--muted); font-size: 0.875rem; }
-    button + button { margin-left: 0.5rem; }
+    .timeline { list-style: none; margin: 0; padding: 0 1rem 1rem; display: grid; gap: 1rem; }
+    .timeline li { display: grid; gap: 0.125rem; padding-left: 1rem; border-left: 3px solid var(--accent); }
+    .small { margin: 0 0 0.25rem; font-size: 1rem; }
+    .hint { color: var(--muted); font-size: 0.875rem; margin: 0 0 0.75rem; }
+    .actions { margin: 0; display: flex; gap: 0.5rem; flex-wrap: wrap; }
   `,
 })
 export class IncidentDetailPage {
@@ -98,6 +139,10 @@ export class IncidentDetailPage {
   protected readonly busy = signal(false);
   protected readonly error = signal('');
   protected readonly announcement = signal('');
+
+  protected ago(iso: string): string {
+    return relativeTime(iso);
+  }
 
   protected label(state: IncidentState): string {
     return ACTION_LABEL[state];

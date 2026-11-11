@@ -1,15 +1,26 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { StatusBadge } from '../shared/status-badge';
-import { CatalogApi } from './catalog-api';
+import { CatalogApi, MonitoredService } from './catalog-api';
 
-const ORDER = ['UP', 'DEGRADED', 'DOWN'] as const;
+type Filter = 'ALL' | MonitoredService['status'];
+
+const FILTERS: { value: Filter; label: string }[] = [
+  { value: 'ALL', label: 'All' },
+  { value: 'UP', label: 'Up' },
+  { value: 'DEGRADED', label: 'Degraded' },
+  { value: 'DOWN', label: 'Down' },
+];
 
 @Component({
   selector: 'app-services-page',
   imports: [StatusBadge],
   template: `
-    <h1>Services</h1>
+    <header class="page-header">
+      <h1>Services</h1>
+      <p class="lede">Every monitored service with its owner, stage and current status.</p>
+    </header>
+
     @if (services.isLoading()) {
       <output class="state-text">Loading services…</output>
     } @else if (services.error()) {
@@ -20,10 +31,16 @@ const ORDER = ['UP', 'DEGRADED', 'DOWN'] as const;
     } @else if (!services.value()?.length) {
       <p class="state-text">No services are monitored yet.</p>
     } @else {
-      <p class="summary">{{ summary() }}</p>
-      <section class="table-scroll" tabindex="0" aria-label="Services table">
-        <table>
-          <caption>Monitored services</caption>
+      <div class="chips" role="group" aria-label="Filter by status">
+        @for (f of filters; track f.value) {
+          <button type="button" class="chip" [attr.aria-pressed]="filter() === f.value" (click)="filter.set(f.value)">
+            {{ f.label }} <span class="count">{{ counts()[f.value] }}</span>
+          </button>
+        }
+      </div>
+      <div class="card table-card">
+        <table class="table-cards">
+          <caption class="visually-hidden">Monitored services</caption>
           <thead>
             <tr>
               <th scope="col">Name</th>
@@ -33,30 +50,39 @@ const ORDER = ['UP', 'DEGRADED', 'DOWN'] as const;
             </tr>
           </thead>
           <tbody>
-            @for (service of services.value(); track service.id) {
+            @for (service of visible(); track service.id) {
               <tr>
-                <td class="mono">{{ service.name }}</td>
-                <td>{{ service.ownerTeam }}</td>
-                <td>{{ service.stage }}</td>
-                <td><app-status-badge [value]="service.status" /></td>
+                <td data-label="Name" class="mono">{{ service.name }}</td>
+                <td data-label="Owner">{{ service.ownerTeam }}</td>
+                <td data-label="Stage">{{ service.stage }}</td>
+                <td data-label="Status"><app-status-badge [value]="service.status" /></td>
               </tr>
+            } @empty {
+              <tr><td colspan="4" class="state-text">No services with this status.</td></tr>
             }
           </tbody>
         </table>
-      </section>
+      </div>
     }
   `,
 })
 export class ServicesPage {
   private readonly api = inject(CatalogApi);
 
+  protected readonly filters = FILTERS;
+  protected readonly filter = signal<Filter>('ALL');
   protected readonly services = rxResource({ stream: () => this.api.services() });
 
-  /** "4 services: 2 UP, 1 DEGRADED, 1 DOWN" as text, so the overview does not depend on colour or icons. */
-  protected readonly summary = computed(() => {
+  protected readonly counts = computed(() => {
     const all = this.services.value() ?? [];
-    const counts = ORDER.map((s) => [s, all.filter((x) => x.status === s).length] as const).filter(([, n]) => n > 0);
-    const parts = counts.map(([s, n]) => n + ' ' + s);
-    return `${all.length} ${all.length === 1 ? 'service' : 'services'}: ${parts.join(', ')}`;
+    return {
+      ALL: all.length,
+      UP: all.filter((s) => s.status === 'UP').length,
+      DEGRADED: all.filter((s) => s.status === 'DEGRADED').length,
+      DOWN: all.filter((s) => s.status === 'DOWN').length,
+    };
   });
+  protected readonly visible = computed(() =>
+    (this.services.value() ?? []).filter((s) => this.filter() === 'ALL' || s.status === this.filter()),
+  );
 }
