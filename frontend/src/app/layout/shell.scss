@@ -22,6 +22,7 @@
   font-size: 0.875rem;
 }
 
+.topbar .toggle { margin-left: auto; }
 .topbar {
   display: flex;
   align-items: center;
@@ -31,7 +32,7 @@
   border-bottom: 1px solid var(--border);
 
   .brand { font-weight: 600; font-size: 1.125rem; color: var(--text); text-decoration: none; letter-spacing: 0.04em; }
-  .repo { margin-left: auto; display: inline-flex; align-items: center; gap: 0.375rem; min-height: 2.75rem; }
+  .repo { margin-left: 0; display: inline-flex; align-items: center; gap: 0.375rem; min-height: 2.75rem; }
   .menu-toggle { display: inline-flex; align-items: center; gap: 0.375rem; }
 }
 

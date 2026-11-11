@@ -5,6 +5,13 @@
   <title>opsdesk</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    // Apply a stored theme choice before first paint (no flash); see app/layout/theme.service.ts
+    try {
+      var t = localStorage.getItem('opsdesk.theme');
+      if (t === 'light' || t === 'dark') { document.documentElement.setAttribute('data-theme', t); }
+    } catch (e) { /* storage blocked: follow the system */ }
+  </script>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>

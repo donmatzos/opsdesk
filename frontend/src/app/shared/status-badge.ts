@@ -23,7 +23,7 @@ const BADGES: Record<string, { icon: string; tone: Tone }> = {
   host: { '[class]': 'tone()' },
   styles: `
     :host { display: inline-flex; align-items: center; gap: 0.375rem; font-weight: 600; font-size: 0.875rem; }
-    :host(.ok) { color: var(--accent); }
+    :host(.ok) { color: var(--ok); }
     :host(.warn) { color: var(--warning); }
     :host(.bad) { color: var(--danger); }
     :host(.info) { color: var(--info); }

@@ -2,13 +2,14 @@ import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { Icon } from '../shared/icon';
+import { ThemeToggle } from './theme-toggle';
 import { FocusOnNavigate } from './focus-on-navigate';
 import { NAV_GROUPS } from './nav-items';
 
 /** Landmarks, skip link, navigation (sidebar from 1024 px, disclosure menu below) and the focusable <main>. */
 @Component({
   selector: 'app-shell',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, Icon],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, Icon, ThemeToggle],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })
