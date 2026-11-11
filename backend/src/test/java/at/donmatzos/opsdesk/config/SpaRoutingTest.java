@@ -1,5 +1,6 @@
 package at.donmatzos.opsdesk.config;
 
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import at.donmatzos.opsdesk.IntegrationTest;
@@ -29,5 +30,16 @@ public class SpaRoutingTest extends IntegrationTest {
         client().get().uri("/api/unknown").exchange()
                 .expectStatus().isNotFound()
                 .expectHeader().contentType("application/problem+json");
+    }
+
+    /** /guide/<page> is an Angular route, but /guide/<file>.md is a static asset: the forward must not swallow it. */
+    @Test
+    public void shouldServeGuideMarkdownAsStaticFile() {
+        client().get().uri("/guide/index.md").exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> {
+                    assertTrue(body.startsWith("# "));
+                    assertFalse(body.contains("<app-root"));
+                });
     }
 }

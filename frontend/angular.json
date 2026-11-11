@@ -27,6 +27,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "src/generated/guide",
+                "output": "guide"
               }
             ],
             "styles": [

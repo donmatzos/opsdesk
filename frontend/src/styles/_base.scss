@@ -87,3 +87,17 @@ input, select, textarea {
 .alert { border: 1px solid var(--danger); border-left-width: 4px; border-radius: var(--radius); padding: 0.75rem 1rem; margin: 1rem 0; max-width: 48rem; }
 .notice { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: var(--radius); padding: 0.75rem 1rem; margin: 1rem 0; max-width: 48rem; }
 .state-text { color: var(--muted); }
+
+// Rendered Markdown (guide pages): readable measure, tables stay in their scroll region.
+.prose {
+  max-width: var(--prose-width);
+  line-height: 1.65;
+
+  .table-scroll, table, img, svg { max-width: none; }
+  img { max-width: 100%; height: auto; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--surface); padding: 0.75rem 1rem; border-radius: var(--radius); }
+  code { background: var(--surface); padding: 0.125rem 0.25rem; border-radius: 0.25rem; }
+  pre code { background: none; padding: 0; }
+  blockquote { margin: 1rem 0; padding: 0.25rem 1rem; border-left: 4px solid var(--border); color: var(--muted); }
+  .table-scroll { max-width: calc(var(--content-width) - 5rem); }
+}
