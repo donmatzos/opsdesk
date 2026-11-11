@@ -24,7 +24,7 @@ Source: owner's resume (2026-11). Direction: DevOps with a software engineering 
 | Java 25, Spring Boot | A | `backend`: REST API, validation, error handling (ProblemDetail), records |
 | PostgreSQL, Flyway | B | Spring Data JDBC, migrations, Testcontainers; Postgres in compose and Helm |
 | Maven multi-module, frontend-maven-plugin | A | parent POM, one runnable jar with Angular inside |
-| Angular, TypeScript | A | `frontend`: dashboard (services, incidents), standalone components, signals |
+| Angular, TypeScript | A | done (phase 7): dashboard, ask-the-runbooks, project guide, WCAG 2.2 AA checked with axe in CI, static demo on GitHub Pages with an in-browser API mock |
 | TestNG, Mockito | A | unit + Spring slice tests in TestNG; coverage via JaCoCo |
 | Service extraction / microservice | D | README note on module boundaries (modules could be split later) |
 | Gradle, Groovy, XML, YAML | D | Groovy via Jenkinsfile; rest implicit |

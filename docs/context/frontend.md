@@ -1,7 +1,20 @@
-# Frontend (draft)
-- Angular (version pinned in plan), standalone components, signals, `HttpClient`.
-- Views: services overview, incident list/detail, "Ask the runbooks" (RAG) box; phase 7 adds a project guide (architecture tour, skills, glossary with sources; content from `docs/guide/*.md`) and a static GitHub Pages build with an in-browser API mock.
-- Build: frontend-maven-plugin installs Node (`frontend/node/`, git-ignored), runs `npm ci`, `npm run build` (output straight to `target/classes/META-INF/resources`, see `angular.json`), `npm test -- --watch=false` (Vitest). The `backend` jar nests the `frontend` jar.
-- **New Angular route -> also add it to `backend/.../config/SpaForwardController`** (deep-link refresh), covered by `SpaRoutingTest`.
-- API types live next to their service (`catalog/catalog-api.ts`); components are standalone, data via `toSignal`.
-- Dev: `ng serve` with proxy to `localhost:8080`.
+# Frontend (phase 7, done)
+Angular 22 workspace in `frontend/`, standalone components, signals, `rxResource` for loading states, no state library. Design and accessibility rules (binding): `docs/guide/design.md`.
+
+## Structure (`src/app/<feature>/`)
+`layout/` shell (skip link, landmarks, sidebar from 1024 px, disclosure menu below), `nav-items.ts` (single nav source), title strategy, focus-on-navigate · `shared/` icon (Lucide paths drawn by the template, not `innerHTML`: the sanitizer strips SVG), status badge (icon + text + colour), problem helpers · `catalog/` · `incidents/` (list, detail, forms) · `assist/` · `guide/` (Markdown pages, glossary) · `demo/` (in-browser API mock) · `testing/axe.ts` (spec helper). One `*-api.ts` per feature holds the API types and URLs (`assist/assist-api.ts` is the only file that knows the `/api/assist` shape).
+
+## Rules
+- **Colours only as CSS custom properties** from `src/styles/_tokens.scss` (light + dark follow the OS, no toggle); `python3 tools/contrast_check.py` checks every pair (also in CI). No raw hex in components.
+- WCAG 2.2 AA: labelled inputs, errors next to the field with `role="alert"`, results in `aria-live="polite"`, status never by colour alone, one `h1` per page, focus to `main` after navigation, 44 px targets, no emoji icons.
+- **New route -> also `SpaForwardController` + `SpaRoutingTest`** (deep-link refresh). Guide pages are listed one by one, never `/guide/*`: the Markdown sources are static files below `/guide/`.
+- Components: `inject()`, signals, no `any`; templates > ~30 lines go to a `.html` file.
+
+## Guide (`docs/guide/*.md` -> app)
+`scripts/copy-guide.mjs` (npm `pre*` hooks) copies `docs/guide` (md + svg) to `src/generated/guide` (git-ignored), served as assets under `guide/`. Angular rejects asset inputs outside the workspace, hence the copy. `guide/markdown.ts` renders with `marked`: raw HTML dropped, Angular's sanitizer stays on (no `bypassSecurityTrust*`), heading ids set on the DOM afterwards (sanitizer strips `id`), `../../<path>` links -> `<repoUrl>/blob/<ref>/<path>`, `<page>.md` -> `guide/<slug>`. `tools/guide_check.py` checks relative links and glossary `Source:` lines (CI `context-check` job). External glossary URLs were checked once with curl; the three docs.redhat.com ones answer 403 to bots and are unverified.
+
+## Demo mode and Pages
+`ng build --configuration demo` (`npm run build:demo`) swaps `environment.ts` for `environment.demo.ts` (`demo: true`, home route `guide`) and registers `demoApiInterceptor`: every `/api/*` request is answered by `DemoBackend` (fictional data, real rules: forward-only transitions, 400/404/409/422 problem details, mock assistant). The jar build registers no interceptor. `.github/workflows/pages.yml` builds with `--base-href /<repo>/`, copies `index.html` to `404.html` (deep links), runs `tools/pages-a11y.sh` (puppeteer + axe-core instead of the planned pa11y-ci, so colour scheme emulation is exact: 10 routes x light/dark x desktop/phone + open menu) and deploys when `PAGES_DEPLOY=true`.
+
+## Commands and versions
+`cd frontend && npx ng serve` (proxy to :8080) · `npx ng test --watch=false` · `npm run build:demo -- --base-href /opsdesk/` then `tools/pages-a11y.sh frontend/dist/demo /opsdesk/`. Pinned: `marked` 18.2.0, `axe-core` 4.14.0, `@fontsource/ibm-plex-sans` and `jetbrains-mono` 5.3.0 (self-hosted), `@types/node` 24.19.2; check tools (installed per run): puppeteer 25.9.0, http-server 14.1.1.
