@@ -92,14 +92,18 @@ jobs:
           skip-setup-trivy: true
 
   terraform:
-    name: Terraform (fmt, validate, tflint)
+    name: Terraform ${{ matrix.dir }} (fmt, validate, tflint)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    # MOCK: Datadog monitors/dashboard are validated only; plan/apply never run (no account).
+    # MOCK: Datadog monitors/dashboard and Azure OpenAI/AI Search are validated only; plan/apply never run (no accounts).
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: [datadog, azure]
     defaults:
       run:
-        working-directory: infra/terraform/datadog
+        working-directory: infra/terraform/${{ matrix.dir }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
