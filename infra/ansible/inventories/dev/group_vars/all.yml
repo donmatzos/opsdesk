@@ -1,0 +1,7 @@
+# MOCK: Ansible Tower/AWX. No credentials here: the cluster token comes from the AWX credential of type "OpenShift or
+# Kubernetes API Bearer Token" (it injects K8S_AUTH_HOST and K8S_AUTH_API_KEY) or from the local environment.
+---
+opsdesk_stage: dev
+opsdesk_namespace: opsdesk-dev
+opsdesk_values_file: deploy/helm/opsdesk/values-dev.yaml
+opsdesk_route_check: true

@@ -93,6 +93,32 @@ check_jenkins() {
   phase "jenkins: no Groovy interpolation in sh steps" jenkins_quotes
 }
 
+# --- Ansible ----------------------------------------------------------------------------------------------------------
+ansible_image=ghcr.io/ansible/community-ansible-dev-tools:v26.7.1
+
+# The dev-tools image has ansible-core, ansible-lint and the playbook tooling. Collections go to a folder inside the checkout
+# (git-ignored); the container runs as the owner of the checkout so nothing is left behind as root.
+ansible_run() {
+  docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "${root}:/repo" -w /repo/infra/ansible "${ansible_image}" sh -c "$1"
+}
+
+ansible_collections() {
+  ansible_run "ansible-galaxy collection install -r collections/requirements.yml -p collections"
+}
+ansible_syntax() {
+  ansible_run "ansible-playbook --syntax-check -i inventories/dev playbooks/deploy.yml && \
+               ansible-playbook --syntax-check -i inventories/prod playbooks/deploy.yml"
+}
+ansible_lint() {
+  ansible_run "ansible-lint --offline playbooks/deploy.yml"
+}
+
+check_ansible() {
+  phase "ansible: install collections" ansible_collections
+  phase "ansible: syntax check (dev and prod)" ansible_syntax
+  phase "ansible: ansible-lint (profile production)" ansible_lint
+}
+
 check_gitlab() {
   phase "gitlab: schema (template + consumer)" gitlab_schema
   phase "gitlab: job set of a default-branch pipeline" gitlab_jobs
@@ -102,7 +128,8 @@ target=${1:-all}
 case "${target}" in
   gitlab) check_gitlab ;;
   jenkins) check_jenkins ;;
-  all) check_gitlab; check_jenkins ;;
+  ansible) check_ansible ;;
+  all) check_gitlab; check_jenkins; check_ansible ;;
   *) echo "usage: $0 [gitlab|jenkins|ansible|all]" >&2; exit 2 ;;
 esac
 echo "CI TEMPLATES CHECK PASS (${target})"

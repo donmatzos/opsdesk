@@ -1,0 +1,72 @@
+# MOCK: Ansible Tower/AWX — run by AWX in a real setup, never by CI. Deploys the same chart with the same values files and the
+# same smoke test and rollback rule as the deploy-dev job in .github/workflows/ci.yml.
+# Required extra variable: opsdesk_image_tag (no default, so a deploy always names what it ships).
+---
+- name: Deploy opsdesk with Helm
+  hosts: all
+  gather_facts: false
+  vars:
+    opsdesk_release: opsdesk
+    opsdesk_repo_root: "{{ playbook_dir }}/../../.."
+    opsdesk_smoke_timeout: 180
+  tasks:
+    - name: Require an image tag
+      ansible.builtin.assert:
+        that:
+          - opsdesk_image_tag is defined
+          - opsdesk_image_tag | length > 0
+        fail_msg: "Pass the image tag to deploy, for example -e opsdesk_image_tag=sha-abc1234."
+        quiet: true
+
+    - name: Deploy and verify
+      block:
+        - name: Install or upgrade the release (atomic, so Helm rolls back a failed rollout by itself)
+          kubernetes.core.helm:
+            name: "{{ opsdesk_release }}"
+            chart_ref: "{{ opsdesk_repo_root }}/deploy/helm/opsdesk"
+            release_namespace: "{{ opsdesk_namespace }}"
+            values_files:
+              - "{{ opsdesk_repo_root }}/{{ opsdesk_values_file }}"
+            set_values:
+              - value: "image.tag={{ opsdesk_image_tag }}"
+                value_type: string
+            wait: true
+            atomic: true
+            timeout: 6m
+
+        - name: Read the route
+          kubernetes.core.k8s_info:
+            api_version: route.openshift.io/v1
+            kind: Route
+            name: "{{ opsdesk_release }}"
+            namespace: "{{ opsdesk_namespace }}"
+          register: opsdesk_route
+          when: opsdesk_route_check | bool
+
+        - name: Smoke test the deployed application
+          ansible.builtin.command:
+            argv:
+              - "{{ opsdesk_repo_root }}/tools/smoke-test.sh"
+              - "https://{{ opsdesk_route.resources[0].spec.host }}"
+              - "{{ opsdesk_smoke_timeout }}"
+          changed_when: false
+          when: opsdesk_route_check | bool
+
+      rescue:
+        - name: Read the release history
+          kubernetes.core.helm_info:
+            name: "{{ opsdesk_release }}"
+            release_namespace: "{{ opsdesk_namespace }}"
+          register: opsdesk_info
+          failed_when: false
+
+        # Roll back unless this is provably the first release (an unknown history still tries the rollback).
+        - name: Roll back to the previous revision
+          ansible.builtin.command:
+            argv: [helm, rollback, "{{ opsdesk_release }}", -n, "{{ opsdesk_namespace }}", --wait]
+          changed_when: true
+          when: (opsdesk_info.status.revision | default(0) | int) != 1
+
+        - name: Fail the job
+          ansible.builtin.fail:
+            msg: "Deploy of {{ opsdesk_image_tag }} to {{ opsdesk_stage }} failed; rolled back unless it was the first release."

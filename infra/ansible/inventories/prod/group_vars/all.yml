@@ -1,0 +1,6 @@
+# MOCK: Ansible Tower/AWX — production stage. The AWX job template for it is launched manually.
+---
+opsdesk_stage: prod
+opsdesk_namespace: opsdesk-prod
+opsdesk_values_file: deploy/helm/opsdesk/values-prod.yaml
+opsdesk_route_check: true
