@@ -3,5 +3,6 @@ Answered 2026-11-10 (MCP in jar, PostgreSQL, OpenShift `oc` deploy in CI, SonarC
 
 Still open (decide before the phase that needs it):
 - ~~Local LLM (phase 6)~~ decided 2026-11-11 (plan default): mock only; an Ollama adapter would be one class + profile behind `LlmClient`.
+- **Closing/throttling `/api/assist`:** open and unthrottled on purpose (showcase, mock model). Before it is used with profile `azure`: auth or no external route, and/or a rate limit.
 - **Agent tooling (phase 8):** `.claude/skills/` and `apm.yml` in the repo, or only `CLAUDE.md`/`AGENTS.md`.
 - **Name:** `opsdesk` (working name).

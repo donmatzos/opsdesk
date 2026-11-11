@@ -14,6 +14,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Answers operations questions from the runbooks.
+ *
+ * <p>NOT FOR REAL USE IN THIS STATE: the endpoint has no authentication and no rate limit (like the rest of the REST
+ * API). With the mock model that costs nothing; with profile "azure" every call costs an Azure AI Search and an Azure
+ * OpenAI request, and anyone who can reach the app could use up the quota. Before using it for real, close it
+ * (authentication, or not routed to the outside) and/or throttle it (rate limit per client, at the gateway or in the app).
+ */
 @RestController
 @RequestMapping("/api/assist")
 class AssistController {

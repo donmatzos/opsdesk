@@ -15,7 +15,7 @@
 Persistence: PostgreSQL, Spring Data JDBC, Flyway (`db/migration`; demo data in `db/demo`, profile `demo`).
 
 ## API (phase 1)
-`GET /api/services`, `GET /api/incidents?state=`, `POST /api/incidents`, `PATCH /api/incidents/{id}`, `POST /api/assist` (RAG question -> answer + sources). Errors as RFC 9457 `ProblemDetail`.
+`GET /api/services`, `GET /api/incidents?state=`, `POST /api/incidents`, `PATCH /api/incidents/{id}`, `POST /api/assist` (RAG question -> answer + sources; **open and unthrottled, not for real use: close and/or throttle it before it runs with profile `azure`**, see `cloud-mocks.md`). Errors as RFC 9457 `ProblemDetail`.
 
 ## Spring profiles
 `default` (all local, mocks), `azure` (Azure adapters, disabled: no credentials), `datadog` (Datadog registry, disabled), `k8s` (probes/logging tuned for cluster).

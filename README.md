@@ -29,6 +29,8 @@ Details (tools, auth, Claude Desktop notes): `docs/context/mcp.md`.
 curl -s localhost:8080/api/assist -H 'Content-Type: application/json' -d '{"question":"database connection refused"}'
 ```
 
+**Not for real use as it is:** `/api/assist` has no authentication and no rate limit. That is harmless with the mock, but before running it against real Azure services it must be closed and/or throttled.
+
 The answer is composed by a **mock** model (`"mock": true`) unless profile `azure` is set. That profile switches to Azure OpenAI and Azure AI Search adapters, which have only been tested against a local fake server, plus Terraform in `infra/terraform/azure` that is validated in CI but never applied. See `docs/context/cloud-mocks.md`.
 
 <!-- TODO: architecture diagram, quick start, "what this shows" table (from docs/context/skills-matrix.md) -->
