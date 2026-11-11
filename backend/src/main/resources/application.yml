@@ -114,3 +114,18 @@ management:
       service: ${DD_SERVICE:opsdesk}
       env: ${DD_ENV:local}
       version: ${DD_VERSION:unknown}
+
+---
+# MOCK: Azure OpenAI + Azure AI Search, no Azure account (see docs/context/cloud-mocks.md). Profile "azure" needs
+# AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT, AZURE_SEARCH_ENDPOINT, AZURE_SEARCH_INDEX and the two API keys
+# from the environment; nothing about them is configured in this file.
+spring:
+  config:
+    activate:
+      on-profile: azure
+opsdesk:
+  ai:
+    azure:
+      search:
+        # true uploads the packaged runbooks to the search index at startup (needs the index, see infra/terraform/azure).
+        index-on-startup: false
