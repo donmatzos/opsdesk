@@ -54,4 +54,20 @@ public class AiProfileWiringTest {
                     assertThat(context.getBean(LlmClient.class)).isInstanceOf(AzureOpenAiLlmClient.class);
                 });
     }
+
+    @Test
+    public void shouldNotAbortTheStartWhenTheRunbookUploadFails() {
+        runner.withInitializer(c -> c.getEnvironment().setActiveProfiles("azure"))
+                .withPropertyValues("AZURE_OPENAI_ENDPOINT=http://localhost:1",
+                        "AZURE_OPENAI_API_KEY=" + UUID.randomUUID(), "AZURE_OPENAI_DEPLOYMENT=chat",
+                        "AZURE_SEARCH_ENDPOINT=http://localhost:1", "AZURE_SEARCH_API_KEY=" + UUID.randomUUID(),
+                        "AZURE_SEARCH_INDEX=idx", "opsdesk.ai.azure.search.index-on-startup=true")
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    // Nothing listens on port 1: the upload fails, and that must only be logged.
+                    org.assertj.core.api.Assertions.assertThatCode(
+                            () -> context.getBean(org.springframework.boot.ApplicationRunner.class).run(null))
+                            .doesNotThrowAnyException();
+                });
+    }
 }

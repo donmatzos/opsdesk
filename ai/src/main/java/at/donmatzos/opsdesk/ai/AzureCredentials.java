@@ -38,7 +38,7 @@ public interface AzureCredentials {
     private static String required(Function<String, String> env, String name) {
         String value = env.apply(name);
         if (value == null || value.isBlank()) {
-            throw new IllegalStateException(name + " is not set");
+            throw new AiBackendException(name + " is not set");
         }
         return value.strip();
     }

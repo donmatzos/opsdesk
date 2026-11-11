@@ -59,6 +59,16 @@ public final class AzureAiSearchIndexer {
             if (response.statusCode() / 100 != 2) {
                 throw new AiBackendException("Azure AI Search returned HTTP " + response.statusCode());
             }
+            // HTTP 207: some documents were rejected although the call itself succeeded.
+            var results = JSON.readTree(response.body()).path("value");
+            long rejected = results.valueStream()
+                    .filter(d -> d.path("status").isBoolean() && !d.path("status").asBoolean()).count();
+            if (rejected > 0) {
+                throw new AiBackendException("Azure AI Search rejected " + rejected + " of " + results.size()
+                        + " documents");
+            }
+        } catch (tools.jackson.core.JacksonException e) {
+            throw new AiBackendException("Azure AI Search returned an unexpected response");
         } catch (IOException e) {
             throw new AiBackendException("Azure AI Search is not reachable", e);
         } catch (InterruptedException e) {

@@ -27,6 +27,6 @@ public final class PromptBuilder {
             sb.append('[').append(i + 1).append("] ").append(chunk.title()).append(" / ").append(chunk.section())
                     .append('\n').append(text).append("\n\n");
         }
-        return sb.append("<question>").append(question).append("</question>").toString();
+        return sb.append("<question>").append(question.replace("<", "&lt;")).append("</question>").toString();
     }
 }

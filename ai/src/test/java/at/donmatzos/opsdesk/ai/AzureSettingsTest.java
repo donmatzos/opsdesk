@@ -67,7 +67,7 @@ public class AzureSettingsTest {
         assertThat(credentials.searchApiKey()).isEqualTo(rotated);
         assertThat(credentials.toString()).doesNotContain(rotated).doesNotContain(env.get("AZURE_OPENAI_API_KEY"));
         env.put("AZURE_SEARCH_API_KEY", " ");
-        assertThatThrownBy(credentials::searchApiKey).isInstanceOf(IllegalStateException.class)
+        assertThatThrownBy(credentials::searchApiKey).isInstanceOf(AiBackendException.class)
                 .hasMessage("AZURE_SEARCH_API_KEY is not set");
     }
 

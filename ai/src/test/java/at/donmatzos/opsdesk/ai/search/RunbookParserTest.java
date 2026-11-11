@@ -58,4 +58,24 @@ public class RunbookParserTest {
         assertThat(rb.chunks().get(1).id()).isEqualTo("db-down--first-checks");
         assertThat(rb.chunks().get(1).path()).isEqualTo("docs/runbooks/db-down.md");
     }
+
+    @Test
+    public void shouldGiveDuplicateSectionsUniqueIds() {
+        var rb = RunbookParser.parse("x", "# T\n\nintro\n\n## Overview\n\na\n\n## Verify\n\nb\n\n## Verify\n\nc\n");
+        assertThat(rb.chunks()).extracting(RunbookChunk::id).doesNotHaveDuplicates()
+                .containsExactly("x--overview", "x--overview-2", "x--verify", "x--verify-2");
+    }
+
+    @Test
+    public void shouldUseAFallbackSlugForHeadingsWithoutLatinLetters() {
+        var rb = RunbookParser.parse("x", "# T\n\n## 概要\n\na\n");
+        assertThat(rb.chunks().get(0).id()).isEqualTo("x--section");
+    }
+
+    @Test
+    public void shouldHandleTildeFencesAndOneLineFences() {
+        var md = "# T\n\n## A\n\n~~~\n## not a heading\n~~~\n\n```code```\n\n## B\n\ntext\n";
+        var rb = RunbookParser.parse("x", md);
+        assertThat(rb.chunks()).extracting(RunbookChunk::section).containsExactly("A", "B");
+    }
 }

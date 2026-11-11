@@ -59,6 +59,9 @@ public final class AzureAiSearchRetriever implements Retriever {
             }
             List<RetrievedChunk> hits = new ArrayList<>();
             for (JsonNode doc : JSON.readTree(response.body()).path("value")) {
+                if (doc.path("id").asString().isBlank() || doc.path("runbook").asString().isBlank()) {
+                    throw new AiBackendException("Azure AI Search returned an unexpected response");
+                }
                 RunbookChunk chunk = new RunbookChunk(doc.path("id").asString(), doc.path("runbook").asString(),
                         doc.path("title").asString(), doc.path("section").asString(),
                         doc.path("content").asString(), doc.path("order").asInt(0));
@@ -70,7 +73,7 @@ public final class AzureAiSearchRetriever implements Retriever {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new AiBackendException("Azure AI Search call was interrupted", e);
-        } catch (JacksonException | NullPointerException e) {
+        } catch (JacksonException e) {
             throw new AiBackendException("Azure AI Search returned an unexpected response");
         }
     }

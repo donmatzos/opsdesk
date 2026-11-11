@@ -55,4 +55,14 @@ public class AzureAiSearchRetrieverTest {
             assertThat(server.seen.get()).isNull();
         }
     }
+
+    @Test
+    public void shouldRejectHitsWithoutIdOrRunbook() throws Exception {
+        try (var server = new FakeServer(200, "{\"value\":[{\"@search.score\":1.0,\"title\":\"A\"}]}")) {
+            var retriever = new AzureAiSearchRetriever(settings(server.uri(), "k"), FakeServer.credentials("k"),
+                    HttpClient.newHttpClient());
+            assertThatThrownBy(() -> retriever.search("x", 1)).isInstanceOf(AiBackendException.class)
+                    .hasMessage("Azure AI Search returned an unexpected response");
+        }
+    }
 }

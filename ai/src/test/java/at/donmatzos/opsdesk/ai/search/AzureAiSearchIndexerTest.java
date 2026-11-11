@@ -23,4 +23,17 @@ public class AzureAiSearchIndexerTest {
                     .contains("\"content\":\"text\"").contains("\"runbook\":\"a\"");
         }
     }
+
+    @Test
+    public void shouldFailWhenAzureRejectsSomeDocuments() throws Exception {
+        try (var server = new FakeServer(207, "{\"value\":[{\"key\":\"a--s\",\"status\":false,\"statusCode\":400},"
+                + "{\"key\":\"a--t\",\"status\":true,\"statusCode\":201}]}")) {
+            var s = new AzureSettings(server.uri(), "d", server.uri(), "my-index");
+            var indexer = new AzureAiSearchIndexer(s, FakeServer.credentials("k"), HttpClient.newHttpClient());
+            var runbooks = List.of(RunbookParser.parse("a", "# A\n\n## S\n\ntext\n"));
+            org.assertj.core.api.Assertions.assertThatThrownBy(() -> indexer.upload(runbooks))
+                    .isInstanceOf(at.donmatzos.opsdesk.ai.AiBackendException.class)
+                    .hasMessage("Azure AI Search rejected 1 of 2 documents");
+        }
+    }
 }
