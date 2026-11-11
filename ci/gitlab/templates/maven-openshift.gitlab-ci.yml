@@ -1,0 +1,284 @@
+# MOCK: GitLab — no GitLab instance exists; in a real setup this file lives in its own project (for example
+# devops/pipeline-templates) and is versioned by tag. It repeats the stages of .github/workflows/ci.yml with the same tools and
+# scripts (tools/smoke-test.sh, tools/ci-smoke.sh, trivy.yaml), see docs/context/cloud-mocks.md.
+#
+# Configured only through variables (declare them in the consumer's `variables:`). Secrets are masked CI/CD variables of the
+# consumer project and never appear in a file: SONAR_TOKEN, OPENSHIFT_SERVER, OPENSHIFT_TOKEN, ARTIFACTORY_USER, ARTIFACTORY_TOKEN.
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+stages: [build, test, scan, package, deploy]
+
+variables:
+  JAVA_VERSION:
+    value: "25"
+    description: "JDK of the build image (eclipse-temurin)."
+  MAVEN_CLI_OPTS:
+    value: "-B -ntp"
+    description: "Options for every ./mvnw call."
+  SONAR_ENABLED:
+    value: "false"
+    description: "true runs SonarQube analysis (needs the masked variable SONAR_TOKEN)."
+  TRIVY_SEVERITY:
+    value: "HIGH,CRITICAL"
+    description: "Findings of these severities that have a fix fail the pipeline."
+  HELM_CHART_DIR:
+    value: "deploy/helm/opsdesk"
+    description: "Chart directory, relative to the project root."
+  HELM_RELEASE:
+    value: "$CI_PROJECT_NAME"
+    description: "Helm release and OpenShift route name."
+  IMAGE_REPOSITORY:
+    value: "$CI_REGISTRY_IMAGE"
+    description: "Registry repository of the image."
+  SMOKE_TIMEOUT:
+    value: "180"
+    description: "Seconds the post-deploy smoke test waits for the application."
+  OPENSHIFT_DEPLOY:
+    value: "false"
+    description: "true enables the deploy jobs (needs OPENSHIFT_SERVER and OPENSHIFT_TOKEN)."
+  OPENSHIFT_NAMESPACE_DEV:
+    value: ""
+    description: "Namespace of the dev stage."
+  OPENSHIFT_NAMESPACE_PROD:
+    value: ""
+    description: "Namespace of the prod stage (manual deploy from a tag)."
+  ARTIFACTORY_ENABLED:
+    value: "false"
+    description: "true publishes the jar and the Helm chart to Artifactory (MOCK, needs ARTIFACTORY_USER and ARTIFACTORY_TOKEN)."
+  ARTIFACTORY_URL:
+    value: "https://artifactory.example.com/artifactory"
+    description: "Artifactory base URL."
+  ARTIFACTORY_HOST:
+    value: "artifactory.example.com"
+    description: "Artifactory host for the OCI Helm registry login."
+  OC_VERSION:
+    value: "5.0.1"
+    description: "oc client version, downloaded from the Red Hat mirror with a sha256 check."
+
+.maven:
+  image: eclipse-temurin:${JAVA_VERSION}-jdk-noble
+  variables:
+    MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+    # Testcontainers talks to the Docker-in-Docker service below.
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    TESTCONTAINERS_HOST_OVERRIDE: docker
+  services:
+    - docker:29-dind
+  cache:
+    key:
+      files: [pom.xml]
+    paths: [.m2/repository]
+
+# oc is not in any stock image: install it like ci.yml does (HTTPS only, checksum verified).
+.oc-helm:
+  image:
+    name: alpine/helm:4.3.1
+    entrypoint: [""]
+  before_script:
+    - apk add --no-cache bash curl jq tar
+    - base="https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OC_VERSION}"
+    - curl --proto '=https' --tlsv1.2 -fsSLO "${base}/openshift-client-linux.tar.gz"
+    - curl --proto '=https' --tlsv1.2 -fsSL "${base}/sha256sum.txt" | grep ' openshift-client-linux.tar.gz$' | sha256sum -c -
+    - tar -xzf openshift-client-linux.tar.gz -C /usr/local/bin oc
+    - oc version --client
+
+maven-verify:
+  extends: .maven
+  stage: build
+  script:
+    - ./mvnw $MAVEN_CLI_OPTS verify
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - backend/target/surefire-reports/TEST-*.xml
+        - ai/target/surefire-reports/TEST-*.xml
+        - frontend/target/test-reports/*.xml
+      coverage_report:
+        coverage_format: jacoco
+        path: backend/target/site/jacoco/jacoco.xml
+
+sonar:
+  extends: .maven
+  stage: test
+  needs: [maven-verify]
+  script:
+    # SONAR_TOKEN is read from the environment by the scanner; it is never put on the command line.
+    - ./mvnw $MAVEN_CLI_OPTS verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+  rules:
+    - if: $SONAR_ENABLED == "true" && $SONAR_TOKEN
+
+secret-scan:
+  stage: test
+  image:
+    name: ghcr.io/gitleaks/gitleaks:v8.30.1
+    entrypoint: [""]
+  variables:
+    GIT_DEPTH: "0"
+  script:
+    - gitleaks git . --redact --no-banner --verbose
+
+trivy-fs:
+  stage: scan
+  image:
+    name: aquasec/trivy:0.76.2
+    entrypoint: [""]
+  script:
+    # trivy.yaml: shared with the GitHub workflow (skips pom.xml, renders the chart with the dev values).
+    - trivy fs --config trivy.yaml --scanners vuln,secret,misconfig --severity "$TRIVY_SEVERITY" --ignore-unfixed --exit-code 1 .
+
+helm-lint:
+  stage: scan
+  image:
+    name: alpine/helm:4.3.1
+    entrypoint: [""]
+  script:
+    # The chart needs a database Secret by design; render it like a real install would.
+    - |
+      for values in "" $HELM_CHART_DIR/values-*.yaml; do
+        helm lint "$HELM_CHART_DIR" --set database.existingSecret=opsdesk-db --set database.url=jdbc:postgresql://db:5432/opsdesk ${values:+-f $values}
+      done
+
+.docker:
+  image: docker:29-cli
+  services:
+    - docker:29-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+
+image-build:
+  extends: .docker
+  stage: package
+  needs: [maven-verify, secret-scan]
+  before_script:
+    - apk add --no-cache bash curl openssl
+  script:
+    - docker build -t opsdesk:ci .
+    # Random UID, read-only root filesystem, throwaway PostgreSQL: the way OpenShift runs it. The published port is on the dind host.
+    - SMOKE_HOST=docker tools/ci-smoke.sh opsdesk:ci
+    - docker save opsdesk:ci -o image.tar
+  artifacts:
+    paths: [image.tar]
+    expire_in: 1 day
+
+trivy-image:
+  stage: package
+  needs: [image-build]
+  image:
+    name: aquasec/trivy:0.76.2
+    entrypoint: [""]
+  script:
+    - trivy image --input image.tar --severity "$TRIVY_SEVERITY" --ignore-unfixed --exit-code 1
+
+image-push:
+  extends: .docker
+  stage: package
+  needs: [image-build, trivy-image]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - docker load -i image.tar
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
+    - docker tag opsdesk:ci "$IMAGE_REPOSITORY:sha-$CI_COMMIT_SHORT_SHA"
+    - docker tag opsdesk:ci "$IMAGE_REPOSITORY:latest"
+    - docker push "$IMAGE_REPOSITORY:sha-$CI_COMMIT_SHORT_SHA"
+    - docker push "$IMAGE_REPOSITORY:latest"
+
+# MOCK: Artifactory. Credentials come from the environment through ${env.*} in a generated settings.xml, never from a file in git.
+maven-deploy:
+  extends: .maven
+  stage: package
+  needs: [maven-verify]
+  rules:
+    - if: $ARTIFACTORY_ENABLED == "true" && ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_TAG)
+  script:
+    - |
+      cat > .m2-settings.xml <<'XML'
+      <settings><servers><server>
+        <id>artifactory</id>
+        <username>${env.ARTIFACTORY_USER}</username>
+        <password>${env.ARTIFACTORY_TOKEN}</password>
+      </server></servers></settings>
+      XML
+    - ./mvnw $MAVEN_CLI_OPTS -Partifactory -Dartifactory.url="$ARTIFACTORY_URL" deploy -DskipTests -s .m2-settings.xml
+
+# MOCK: Artifactory (OCI Helm registry).
+helm-publish:
+  stage: package
+  image:
+    name: alpine/helm:4.3.1
+    entrypoint: [""]
+  needs: [helm-lint]
+  rules:
+    - if: $ARTIFACTORY_ENABLED == "true" && $CI_COMMIT_TAG
+  script:
+    - helm package "$HELM_CHART_DIR" --version "${CI_COMMIT_TAG#v}" --app-version "${CI_COMMIT_TAG#v}"
+    - echo "$ARTIFACTORY_TOKEN" | helm registry login "$ARTIFACTORY_HOST" -u "$ARTIFACTORY_USER" --password-stdin
+    - helm push ./*.tgz "oci://$ARTIFACTORY_HOST/helm-local"
+
+deploy-dev:
+  extends: .oc-helm
+  stage: deploy
+  needs: [image-push]
+  environment:
+    name: dev
+  resource_group: deploy-dev
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $OPENSHIFT_DEPLOY == "true"
+  script:
+    - oc login --token="$OPENSHIFT_TOKEN" --server="$OPENSHIFT_SERVER" > /dev/null
+    - oc project "$OPENSHIFT_NAMESPACE_DEV"
+    # --rollback-on-failure: Helm rolls back by itself if the rollout fails.
+    - >-
+      helm upgrade --install "$HELM_RELEASE" "$HELM_CHART_DIR" -n "$OPENSHIFT_NAMESPACE_DEV"
+      -f "$HELM_CHART_DIR/values-dev.yaml" --set image.repository="$IMAGE_REPOSITORY" --set image.tag="sha-$CI_COMMIT_SHORT_SHA"
+      --rollback-on-failure --wait --timeout 6m
+    - url="https://$(oc get route "$HELM_RELEASE" -n "$OPENSHIFT_NAMESPACE_DEV" -o jsonpath='{.spec.host}')"
+    - |
+      if ! tools/smoke-test.sh "$url" "$SMOKE_TIMEOUT"; then
+        # Roll back unless this is provably the first release (an unknown history still tries the rollback).
+        revisions=$(helm history "$HELM_RELEASE" -n "$OPENSHIFT_NAMESPACE_DEV" -o json | jq length) || revisions=unknown
+        if [ "$revisions" = 1 ]; then
+          echo "First release: nothing to roll back to."
+        else
+          helm rollback "$HELM_RELEASE" -n "$OPENSHIFT_NAMESPACE_DEV" --wait
+        fi
+        exit 1
+      fi
+  after_script:
+    - helm history "$HELM_RELEASE" -n "$OPENSHIFT_NAMESPACE_DEV" --max 5 || true
+
+# MOCK: production deploy. Manual, from a tag only, with the prod values.
+deploy-prod:
+  extends: .oc-helm
+  stage: deploy
+  needs: [image-push]
+  environment:
+    name: production
+  resource_group: deploy-prod
+  rules:
+    - if: $CI_COMMIT_TAG && $OPENSHIFT_DEPLOY == "true"
+      when: manual
+  script:
+    - oc login --token="$OPENSHIFT_TOKEN" --server="$OPENSHIFT_SERVER" > /dev/null
+    - oc project "$OPENSHIFT_NAMESPACE_PROD"
+    - >-
+      helm upgrade --install "$HELM_RELEASE" "$HELM_CHART_DIR" -n "$OPENSHIFT_NAMESPACE_PROD"
+      -f "$HELM_CHART_DIR/values-prod.yaml" --set image.repository="$IMAGE_REPOSITORY" --set image.tag="${CI_COMMIT_TAG#v}"
+      --rollback-on-failure --wait --timeout 6m
+    - url="https://$(oc get route "$HELM_RELEASE" -n "$OPENSHIFT_NAMESPACE_PROD" -o jsonpath='{.spec.host}')"
+    - |
+      if ! tools/smoke-test.sh "$url" "$SMOKE_TIMEOUT"; then
+        revisions=$(helm history "$HELM_RELEASE" -n "$OPENSHIFT_NAMESPACE_PROD" -o json | jq length) || revisions=unknown
+        if [ "$revisions" != 1 ]; then helm rollback "$HELM_RELEASE" -n "$OPENSHIFT_NAMESPACE_PROD" --wait; fi
+        exit 1
+      fi

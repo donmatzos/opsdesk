@@ -119,6 +119,16 @@ jobs:
           docker run --rm --entrypoint sh -v "$PWD:/data" -w /data ghcr.io/terraform-linters/tflint:v0.66.0
           -c 'tflint --init && tflint --format compact'
 
+  templates:
+    name: Pipeline templates and Ansible (lint)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # MOCK: the GitLab template, Jenkinsfile and Ansible playbook are validated only; no GitLab, Jenkins or AWX runs them.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: tools/ci-templates-check.sh all
+
   helm:
     name: Helm chart (lint, unit tests, schema)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -2,6 +2,7 @@
 # Start an image next to a throwaway PostgreSQL and smoke-test it the way OpenShift runs it:
 # random UID in group 0, read-only root filesystem, writable /tmp only.
 # Usage: tools/ci-smoke.sh <image>        The DB password is generated per run and never stored.
+# SMOKE_HOST: where the published port is reachable (default localhost; "docker" next to a Docker-in-Docker service in GitLab).
 set -euo pipefail
 
 image=${1:?usage: ci-smoke.sh <image>}
@@ -31,4 +32,4 @@ docker run -d --name smoke-app --network smoke -p 8080:8080 \
   -e SPRING_DATASOURCE_PASSWORD="${db_secret}" \
   "${image}" >/dev/null
 
-"$(dirname "$0")/smoke-test.sh" http://localhost:8080 120 || { docker logs smoke-app | tail -50; exit 1; }
+"$(dirname "$0")/smoke-test.sh" "http://${SMOKE_HOST:-localhost}:8080" 120 || { docker logs smoke-app | tail -50; exit 1; }

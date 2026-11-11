@@ -25,3 +25,7 @@ frontend/coverage/
 
 # helm-unittest creates it even without snapshot tests
 deploy/helm/opsdesk/tests/__snapshot__/
+
+# GitLab template checks (tools/ci-templates-check.sh)
+.gitlab-ci-local/
+ci/gitlab/tests/generated.gitlab-ci.yml

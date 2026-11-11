@@ -1,0 +1,20 @@
+# MOCK: GitLab — a consumer pipeline: only variables, no job definitions. The shared template does the work.
+# Secrets (SONAR_TOKEN, OPENSHIFT_SERVER, OPENSHIFT_TOKEN, ARTIFACTORY_USER, ARTIFACTORY_TOKEN) are masked, protected
+# CI/CD variables of this project and never written here.
+
+# >>> include
+include:
+  - project: devops/pipeline-templates
+    ref: v1.0.0
+    file: /templates/maven-openshift.gitlab-ci.yml
+# <<< include
+
+variables:
+  SONAR_ENABLED: "true"
+  OPENSHIFT_DEPLOY: "true"
+  OPENSHIFT_NAMESPACE_DEV: opsdesk-dev
+  OPENSHIFT_NAMESPACE_PROD: opsdesk-prod
+
+# One documented override: this project's test suite is slow.
+maven-verify:
+  timeout: 30m
