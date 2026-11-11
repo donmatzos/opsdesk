@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# End-to-end check of the MCP server: the running app must expose /mcp with the six tools, answer a tool call
+# End-to-end check of the MCP server: the running app must expose /mcp with the seven tools, answer a tool call
 # with real data and reject requests without the bearer token. Uses the MCP Inspector CLI (npx, needs Node).
 # Usage: OPSDESK_MCP_TOKEN=<token> tools/mcp-verify.sh [base-url]   (default http://localhost:8080)
 # The app must run with the same token, e.g. compose profile "app" with OPSDESK_MCP_TOKEN in deploy/compose/.env.
@@ -29,7 +29,7 @@ python3 - "${tools_json}" <<'PY' || fail "unexpected tool list"
 import json, sys
 names = sorted(t["name"] for t in json.loads(sys.argv[1])["tools"])
 expected = sorted(["list_services", "get_service_status", "list_active_incidents", "get_incident",
-                   "open_incident", "change_incident_state"])
+                   "open_incident", "change_incident_state", "search_runbooks"])
 assert names == expected, f"tools {names}, expected {expected}"
 print(f"ok  {len(names)} tools: {', '.join(names)}")
 PY
@@ -43,5 +43,16 @@ assert not result.get("isError"), result
 services = json.loads(result["content"][0]["text"])
 assert len(services) == 4, f"{len(services)} services, expected 4 (demo data)"
 print(f"ok  {len(services)} services: {', '.join(s['name'] for s in services)}")
+PY
+echo "== tools/call search_runbooks"
+runbooks_json=$(call --method tools/call --tool-name search_runbooks --tool-arg "query=pod not ready") \
+  || fail "tools/call search_runbooks failed"
+python3 - "${runbooks_json}" <<'PY' || fail "unexpected search_runbooks result"
+import json, sys
+result = json.loads(sys.argv[1])
+assert not result.get("isError"), result
+hits = json.loads(result["content"][0]["text"])["hits"]
+assert any(h["runbook"] == "pod-not-ready" for h in hits), f"no pod-not-ready hit: {hits}"
+print(f"ok  {len(hits)} runbook hits, first: {hits[0]['runbook']}")
 PY
 echo "MCP VERIFY PASS"

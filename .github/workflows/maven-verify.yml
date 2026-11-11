@@ -65,7 +65,7 @@ jobs:
         with:
           # One glob (braces) = one combined report. Separate lines would create one check per line
           # under the same name, and the last one hides the others.
-          report_paths: "{backend/target/surefire-reports/TEST-*.xml,frontend/target/test-reports/*.xml}"
+          report_paths: "{backend/target/surefire-reports/TEST-*.xml,ai/target/surefire-reports/TEST-*.xml,frontend/target/test-reports/*.xml}"
           check_name: Test report
           include_passed: true
           detailed_summary: true
@@ -78,7 +78,9 @@ jobs:
           name: test-reports
           path: |
             backend/target/surefire-reports/
+            ai/target/surefire-reports/
             backend/target/site/jacoco/
+            ai/target/site/jacoco/
             frontend/target/test-reports/
             frontend/coverage/
           retention-days: 7

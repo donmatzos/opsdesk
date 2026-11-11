@@ -1,6 +1,7 @@
 package at.donmatzos.opsdesk.config;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 
 import java.io.IOException;
@@ -61,5 +62,17 @@ public class ApplicationConfigTest {
 
     private static List<PropertySource<?>> load() throws IOException {
         return new YamlPropertySourceLoader().load("application", new ClassPathResource("application.yml"));
+    }
+
+    @Test
+    public void shouldKeepAzureKeysOutOfTheConfig() throws IOException {
+        PropertySource<?> azure = load().stream()
+                .filter(d -> "azure".equals(d.getProperty("spring.config.activate.on-profile")))
+                .findFirst().orElseThrow();
+        for (String name : ((org.springframework.core.env.EnumerablePropertySource<?>) azure).getPropertyNames()) {
+            assertFalse(name.toLowerCase().contains("key"), name);
+            assertFalse(name.toLowerCase().contains("secret"), name);
+        }
+        assertEquals(String.valueOf(azure.getProperty("opsdesk.ai.azure.search.index-on-startup")), "false");
     }
 }

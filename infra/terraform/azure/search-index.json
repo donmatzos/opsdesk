@@ -1,0 +1,12 @@
+{
+  "name": "opsdesk-runbooks",
+  "description": "MOCK: Azure AI Search index for the opsdesk runbooks — no Azure account; never created, see docs/context/cloud-mocks.md",
+  "fields": [
+    {"name": "id", "type": "Edm.String", "key": true, "searchable": false},
+    {"name": "runbook", "type": "Edm.String", "filterable": true, "searchable": false},
+    {"name": "title", "type": "Edm.String", "searchable": true, "analyzer": "en.microsoft"},
+    {"name": "section", "type": "Edm.String", "searchable": true, "analyzer": "en.microsoft"},
+    {"name": "content", "type": "Edm.String", "searchable": true, "analyzer": "en.microsoft"},
+    {"name": "order", "type": "Edm.Int32", "sortable": true}
+  ]
+}

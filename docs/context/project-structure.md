@@ -3,14 +3,14 @@
 |---|---|
 | `pom.xml` | parent POM: Spring Boot parent, Java 25, modules `frontend` then `backend`, versions |
 | `backend/` | Spring Boot app, packages `at.donmatzos.opsdesk.{catalog,incident,runbook,metrics,mcp,common,config}` (`mcp` = MCP tools + bearer token filter) |
-| `ai/` | RAG + LLM/search adapters, `at.donmatzos.opsdesk.ai.{search,llm}` |
+| `ai/` | RAG + LLM/search adapters, `at.donmatzos.opsdesk.ai.{search,llm}`; packages `docs/runbooks/*.md` into the jar (`runbooks/`) |
 | `frontend/` | Angular workspace (`src/app/<feature>/`), `pom.xml` runs npm via frontend-maven-plugin |
 | `Dockerfile` | multi-stage image (to create, root) |
 | `deploy/helm/opsdesk/` | Helm chart: `templates/`, `tests/` (helm-unittest), `values.yaml` + `values.schema.json`, `values-dev.yaml`, `values-prod.yaml` (mock) |
 | `deploy/openshift/` | `README.md`: Developer Sandbox, CI service account, secrets, manual deploy/rollback |
 | `deploy/compose/` | local `compose.yml` (app, optional Elastic/Postgres) |
 | `infra/terraform/datadog/` | monitors, dashboard as code (validate only) |
-| `infra/terraform/azure/` | AI Search + OpenAI resources (validate only, commented backend) |
+| `infra/terraform/azure/` | AI Search + OpenAI resources (validate only, commented backend), `search-index.json` |
 | `infra/ansible/` | playbook + Tower job template (mocked) |
 | `ci/gitlab/` | shared pipeline template + consumer example |
 | `ci/jenkins/` | `Jenkinsfile` (mocked) |

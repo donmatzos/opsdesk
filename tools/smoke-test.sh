@@ -24,6 +24,10 @@ services=$(curl -fsS --max-time 10 -H 'Accept: application/json' "${base_url}/ap
 [[ $services == \[* ]] || fail "GET /api/services did not return a JSON array: ${services:0:200}"
 echo "ok  /api/services returns JSON"
 
+assist=$(curl -fsS --max-time 10 -H 'Content-Type: application/json' -d '{"question":"database connection refused"}' "${base_url}/api/assist") || fail "POST /api/assist failed"
+[[ $assist == *'"sources":[{'* ]] || fail "POST /api/assist returned no sources: ${assist:0:200}"
+echo "ok  /api/assist answers with sources"
+
 index=$(curl -fsS --max-time 10 "${base_url}/") || fail "GET / failed"
 [[ $index == *'<app-root'* ]] || fail "GET / does not serve the Angular app"
 echo "ok  / serves the Angular app"

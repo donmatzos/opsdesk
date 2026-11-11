@@ -15,10 +15,11 @@ Purpose: let an AI assistant (Claude Code/Desktop, Copilot) look up services and
 | `get_incident` | `incident_id` | unknown id -> tool error |
 | `open_incident` | `service_name`, `severity`, `summary` (1-200 chars) | writes; service by name |
 | `change_incident_state` | `incident_id`, `state` | OPEN->MITIGATED->RESOLVED, OPEN->RESOLVED; RESOLVED is final |
-Tools call `IncidentService`, so validation, transitions, metrics and ECS logs match the REST API. Domain errors (not found, conflict, invalid value) come back as tool results with `isError: true` and a readable message; anything unexpected is logged and reported generically (no stack traces). `search_runbooks` arrives in phase 6.
+| `search_runbooks` | `query`, `limit?` (1-5, default 3) | read-only; hits with runbook, section, excerpt (<= 400 chars), score, repo path; same retriever as `/api/assist` |
+Tools call `IncidentService`, so validation, transitions, metrics and ECS logs match the REST API. Domain errors (not found, conflict, invalid value) come back as tool results with `isError: true` and a readable message; anything unexpected is logged and reported generically (no stack traces).
 
 ## Connect
 Start the app with a token: `docker compose -f deploy/compose/compose.yml --profile app up -d --build --wait` (token in `.env`).
 - Claude Code: root `.mcp.json` (project scope) holds server `opsdesk` and `${OPSDESK_MCP_TOKEN}`; export the token, then run `claude` in the repo and approve the server (`/mcp` shows it).
 - Claude Desktop (untested here): a remote server with a bearer header is probably possible via a bridge such as `npx mcp-remote http://localhost:8080/mcp --header "Authorization: Bearer <token>"` in `claude_desktop_config.json`; check the current Claude Desktop and mcp-remote docs, this was not verified.
-- Inspector / CI-style check: `set -a; . deploy/compose/.env; set +a; tools/mcp-verify.sh` (401 without token, 6 tools, 4 demo services, prints `MCP VERIFY PASS`). Interactive: `npx @modelcontextprotocol/inspector@2.14.0`, transport Streamable HTTP, header `Authorization`.
+- Inspector / CI-style check: `set -a; . deploy/compose/.env; set +a; tools/mcp-verify.sh` (401 without token, 7 tools, 4 demo services, a `search_runbooks` hit, prints `MCP VERIFY PASS`). Interactive: `npx @modelcontextprotocol/inspector@2.14.0`, transport Streamable HTTP, header `Authorization`.

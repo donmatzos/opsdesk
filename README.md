@@ -9,7 +9,7 @@ A minimal service-status and incident desk: Spring Boot (Java 25) backend, Angul
 Cloud parts (Azure OpenAI / AI Search, OpenShift, Datadog, Artifactory) are mocked or disabled, because the project runs without a cloud account. They are written the way they would be used, and each one is marked.
 
 ## Use it from Claude Code
-The backend serves an MCP server at `/mcp` (6 tools: services, incidents, open/change incident). It needs a bearer token, so generate one and start the stack:
+The backend serves an MCP server at `/mcp` (7 tools: services, incidents, open/change incident, search runbooks). It needs a bearer token, so generate one and start the stack:
 
 ```bash
 cp deploy/compose/.env.example deploy/compose/.env
@@ -21,5 +21,16 @@ claude                   # the repo's .mcp.json registers the server "opsdesk"; 
 ```
 
 Details (tools, auth, Claude Desktop notes): `docs/context/mcp.md`.
+
+## Ask the runbooks
+`docs/runbooks/` holds the operations runbooks; they ship inside the jar and are indexed in memory (BM25). `POST /api/assist` and the MCP tool `search_runbooks` return the best-matching sections with sources:
+
+```bash
+curl -s localhost:8080/api/assist -H 'Content-Type: application/json' -d '{"question":"database connection refused"}'
+```
+
+**Not for real use as it is:** `/api/assist` has no authentication and no rate limit. That is harmless with the mock, but before running it against real Azure services it must be closed and/or throttled.
+
+The answer is composed by a **mock** model (`"mock": true`) unless profile `azure` is set. That profile switches to Azure OpenAI and Azure AI Search adapters, which have only been tested against a local fake server, plus Terraform in `infra/terraform/azure` that is validated in CI but never applied. See `docs/context/cloud-mocks.md`.
 
 <!-- TODO: architecture diagram, quick start, "what this shows" table (from docs/context/skills-matrix.md) -->
