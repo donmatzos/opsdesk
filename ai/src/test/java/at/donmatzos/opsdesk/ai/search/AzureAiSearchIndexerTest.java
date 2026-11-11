@@ -13,8 +13,8 @@ public class AzureAiSearchIndexerTest {
     @Test
     public void shouldUploadChunksWithMergeOrUpload() throws Exception {
         try (var server = new FakeServer(200, "{\"value\":[]}")) {
-            var s = new AzureSettings(server.uri(), "k", "d", server.uri(), "k", "my-index");
-            new AzureAiSearchIndexer(s, HttpClient.newHttpClient())
+            var s = new AzureSettings(server.uri(), "d", server.uri(), "my-index");
+            new AzureAiSearchIndexer(s, FakeServer.credentials("k"), HttpClient.newHttpClient())
                     .upload(List.of(RunbookParser.parse("a", "# A\n\n## S\n\ntext\n")));
 
             var seen = server.seen.get();

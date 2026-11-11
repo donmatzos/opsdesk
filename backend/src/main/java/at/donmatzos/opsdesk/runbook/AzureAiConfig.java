@@ -1,6 +1,7 @@
 // MOCK: Azure OpenAI + Azure AI Search wiring (profile "azure", off by default) — no Azure account; compiled and tested against a local fake server only, see docs/context/cloud-mocks.md
 package at.donmatzos.opsdesk.runbook;
 
+import at.donmatzos.opsdesk.ai.AzureCredentials;
 import at.donmatzos.opsdesk.ai.AzureSettings;
 import at.donmatzos.opsdesk.ai.llm.AzureOpenAiLlmClient;
 import at.donmatzos.opsdesk.ai.llm.LlmClient;
@@ -29,24 +30,31 @@ class AzureAiConfig {
         return AzureSettings.from(environment::getProperty);
     }
 
+    /** Keys stay in the environment (Secret in a cluster); this bean only knows where to look them up. */
+    @Bean
+    AzureCredentials azureCredentials(Environment environment) {
+        return AzureCredentials.fromEnvironment(environment::getProperty);
+    }
+
     @Bean
     HttpClient azureHttpClient() {
         return HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     }
 
     @Bean
-    Retriever retriever(AzureSettings settings, HttpClient azureHttpClient) {
-        return new AzureAiSearchRetriever(settings, azureHttpClient);
+    Retriever retriever(AzureSettings settings, AzureCredentials credentials, HttpClient azureHttpClient) {
+        return new AzureAiSearchRetriever(settings, credentials, azureHttpClient);
     }
 
     @Bean
-    LlmClient llmClient(AzureSettings settings, HttpClient azureHttpClient) {
-        return new AzureOpenAiLlmClient(settings, azureHttpClient);
+    LlmClient llmClient(AzureSettings settings, AzureCredentials credentials, HttpClient azureHttpClient) {
+        return new AzureOpenAiLlmClient(settings, credentials, azureHttpClient);
     }
 
     @Bean
     @ConditionalOnBooleanProperty("opsdesk.ai.azure.search.index-on-startup")
-    ApplicationRunner uploadRunbooks(AzureSettings settings, HttpClient azureHttpClient, RunbookLoader loader) {
-        return args -> new AzureAiSearchIndexer(settings, azureHttpClient).upload(loader.load());
+    ApplicationRunner uploadRunbooks(AzureSettings settings, AzureCredentials credentials, HttpClient azureHttpClient,
+                                     RunbookLoader loader) {
+        return args -> new AzureAiSearchIndexer(settings, credentials, azureHttpClient).upload(loader.load());
     }
 }

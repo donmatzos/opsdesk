@@ -2,6 +2,7 @@
 package at.donmatzos.opsdesk.ai.llm;
 
 import at.donmatzos.opsdesk.ai.AiBackendException;
+import at.donmatzos.opsdesk.ai.AzureCredentials;
 import at.donmatzos.opsdesk.ai.AzureSettings;
 import at.donmatzos.opsdesk.ai.search.RetrievedChunk;
 import java.io.IOException;
@@ -22,10 +23,12 @@ public final class AzureOpenAiLlmClient implements LlmClient {
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
     private final AzureSettings settings;
+    private final AzureCredentials credentials;
     private final HttpClient http;
 
-    public AzureOpenAiLlmClient(AzureSettings settings, HttpClient http) {
+    public AzureOpenAiLlmClient(AzureSettings settings, AzureCredentials credentials, HttpClient http) {
         this.settings = Objects.requireNonNull(settings);
+        this.credentials = Objects.requireNonNull(credentials);
         this.http = Objects.requireNonNull(http);
     }
 
@@ -42,7 +45,7 @@ public final class AzureOpenAiLlmClient implements LlmClient {
                         URI.create(settings.openAiEndpoint() + "/openai/v1/chat/completions"))
                 .timeout(Duration.ofSeconds(30))
                 .header("Content-Type", "application/json")
-                .header("api-key", settings.openAiApiKey())
+                .header("api-key", credentials.openAiApiKey())
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
         try {

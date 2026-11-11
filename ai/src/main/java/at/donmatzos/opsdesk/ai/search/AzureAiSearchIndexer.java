@@ -2,6 +2,7 @@
 package at.donmatzos.opsdesk.ai.search;
 
 import at.donmatzos.opsdesk.ai.AiBackendException;
+import at.donmatzos.opsdesk.ai.AzureCredentials;
 import at.donmatzos.opsdesk.ai.AzureSettings;
 import java.io.IOException;
 import java.net.URI;
@@ -22,10 +23,12 @@ public final class AzureAiSearchIndexer {
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
     private final AzureSettings settings;
+    private final AzureCredentials credentials;
     private final HttpClient http;
 
-    public AzureAiSearchIndexer(AzureSettings settings, HttpClient http) {
+    public AzureAiSearchIndexer(AzureSettings settings, AzureCredentials credentials, HttpClient http) {
         this.settings = Objects.requireNonNull(settings);
+        this.credentials = Objects.requireNonNull(credentials);
         this.http = Objects.requireNonNull(http);
     }
 
@@ -48,7 +51,7 @@ public final class AzureAiSearchIndexer {
                         + settings.searchIndex() + "/docs/index?api-version=" + AzureAiSearchRetriever.API_VERSION))
                 .timeout(Duration.ofSeconds(30))
                 .header("Content-Type", "application/json")
-                .header("api-key", settings.searchApiKey())
+                .header("api-key", credentials.searchApiKey())
                 .POST(HttpRequest.BodyPublishers.ofString(JSON.writeValueAsString(Map.of("value", docs))))
                 .build();
         try {

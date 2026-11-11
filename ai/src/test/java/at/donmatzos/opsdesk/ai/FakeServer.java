@@ -31,6 +31,11 @@ public final class FakeServer implements AutoCloseable {
         server.start();
     }
 
+    /** Credentials for tests: the key comes from a fake environment, like in the app. */
+    public static AzureCredentials credentials(String key) {
+        return AzureCredentials.fromEnvironment(name -> key);
+    }
+
     public URI uri() {
         return URI.create("http://127.0.0.1:" + server.getAddress().getPort());
     }

@@ -6,9 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-/** Connection settings for profile "azure". Keys only come from the environment and are never printed. */
-public record AzureSettings(URI openAiEndpoint, String openAiApiKey, String openAiDeployment,
-                            URI searchEndpoint, String searchApiKey, String searchIndex) {
+/** Non-secret connection settings for profile "azure". The API keys are not part of this class, see {@link AzureCredentials}. */
+public record AzureSettings(URI openAiEndpoint, String openAiDeployment, URI searchEndpoint, String searchIndex) {
 
     static final String OPENAI_ENDPOINT = "AZURE_OPENAI_ENDPOINT";
     static final String OPENAI_KEY = "AZURE_OPENAI_API_KEY";
@@ -20,17 +19,18 @@ public record AzureSettings(URI openAiEndpoint, String openAiApiKey, String open
     public static AzureSettings from(Function<String, String> env) {
         List<String> missing = new ArrayList<>();
         String openAiEndpoint = value(env, OPENAI_ENDPOINT, missing);
-        String openAiKey = value(env, OPENAI_KEY, missing);
+        // Keys are only checked for presence here (fail fast); the values are read later by AzureCredentials.
+        value(env, OPENAI_KEY, missing);
         String deployment = value(env, OPENAI_DEPLOYMENT, missing);
         String searchEndpoint = value(env, SEARCH_ENDPOINT, missing);
-        String searchKey = value(env, SEARCH_KEY, missing);
+        value(env, SEARCH_KEY, missing);
         String index = value(env, SEARCH_INDEX, missing);
         if (!missing.isEmpty()) {
             throw new IllegalStateException(
                     "Profile 'azure' needs these environment variables: " + String.join(", ", missing));
         }
-        return new AzureSettings(endpoint(OPENAI_ENDPOINT, openAiEndpoint), openAiKey, deployment,
-                endpoint(SEARCH_ENDPOINT, searchEndpoint), searchKey, index);
+        return new AzureSettings(endpoint(OPENAI_ENDPOINT, openAiEndpoint), deployment,
+                endpoint(SEARCH_ENDPOINT, searchEndpoint), index);
     }
 
     private static String value(Function<String, String> env, String name, List<String> missing) {
@@ -49,12 +49,5 @@ public record AzureSettings(URI openAiEndpoint, String openAiApiKey, String open
             throw new IllegalStateException(name + " must be an https:// URL");
         }
         return uri;
-    }
-
-    @Override
-    public String toString() {
-        return "AzureSettings[openAiEndpoint=" + openAiEndpoint + ", openAiApiKey=***, openAiDeployment="
-                + openAiDeployment + ", searchEndpoint=" + searchEndpoint + ", searchApiKey=***, searchIndex="
-                + searchIndex + "]";
     }
 }

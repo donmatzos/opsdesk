@@ -9,4 +9,5 @@ Rule: a mock must be **honest and realistic** — written the way the real integ
 | Datadog | Micrometer Datadog registry (profile `datadog`, key only from env `DATADOG_API_KEY`, `DatadogKeyCheck` fails fast); chart `datadog.enabled` (Unified Service Tagging, agent host, key from Secret); Terraform monitors + dashboard | profile `datadog`; chart value; Terraform validate only |
 | Artifactory | commented `distributionManagement`/Helm push; real: GHCR/GitHub Packages | - |
 | Ansible Tower | playbook + `awx` provider job template (commented) | - |
+Keys: `AzureSettings` holds no secret; `AzureCredentials` looks the two keys up in the environment (Secret in a cluster, `.env` locally) on each request and keeps no copy.
 Marker comment: `MOCK: <thing> — <why>`. README lists every mock.

@@ -48,11 +48,27 @@ public class AzureSettingsTest {
     }
 
     @Test
-    public void shouldRedactKeysInToString() {
+    public void shouldNotHoldApiKeysInSettings() {
         var env = full();
-        String text = AzureSettings.from(env::get).toString();
-        assertThat(text).doesNotContain(env.get("AZURE_OPENAI_API_KEY")).doesNotContain(env.get("AZURE_SEARCH_API_KEY"))
-                .contains("***");
+        var settings = AzureSettings.from(env::get);
+        assertThat(settings.toString()).doesNotContain(env.get("AZURE_OPENAI_API_KEY"))
+                .doesNotContain(env.get("AZURE_SEARCH_API_KEY"));
+        assertThat(AzureSettings.class.getRecordComponents()).extracting(c -> c.getName().toLowerCase())
+                .noneMatch(n -> n.contains("key") || n.contains("secret"));
+    }
+
+    @Test
+    public void shouldReadKeysFromTheEnvironmentOnEveryCallAndNeverPrintThem() {
+        var env = full();
+        var credentials = AzureCredentials.fromEnvironment(env::get);
+        assertThat(credentials.openAiApiKey()).isEqualTo(env.get("AZURE_OPENAI_API_KEY"));
+        String rotated = UUID.randomUUID().toString();
+        env.put("AZURE_SEARCH_API_KEY", rotated);
+        assertThat(credentials.searchApiKey()).isEqualTo(rotated);
+        assertThat(credentials.toString()).doesNotContain(rotated).doesNotContain(env.get("AZURE_OPENAI_API_KEY"));
+        env.put("AZURE_SEARCH_API_KEY", " ");
+        assertThatThrownBy(credentials::searchApiKey).isInstanceOf(IllegalStateException.class)
+                .hasMessage("AZURE_SEARCH_API_KEY is not set");
     }
 
     @Test

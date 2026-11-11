@@ -15,14 +15,14 @@ import org.testng.annotations.Test;
 public class AzureOpenAiLlmClientTest {
 
     private static AzureSettings settings(URI endpoint, String key) {
-        return new AzureSettings(endpoint, key, "my-deployment", endpoint, key, "idx");
+        return new AzureSettings(endpoint, "my-deployment", endpoint, "idx");
     }
 
     @Test
     public void shouldSendDeploymentAndPromptsWithApiKeyHeader() throws Exception {
         String key = UUID.randomUUID().toString();
         try (var server = new FakeServer(200, "{\"choices\":[{\"message\":{\"content\":\"hello [1]\"}}]}")) {
-            var client = new AzureOpenAiLlmClient(settings(server.uri(), key), HttpClient.newHttpClient());
+            var client = new AzureOpenAiLlmClient(settings(server.uri(), key), FakeServer.credentials(key), HttpClient.newHttpClient());
             var answer = client.answer("why?", List.of(MockLlmClientTest.passage("S", "text")));
 
             var seen = server.seen.get();
@@ -40,7 +40,7 @@ public class AzureOpenAiLlmClientTest {
     public void shouldParseTheFirstChoice() throws Exception {
         try (var server = new FakeServer(200, "{\"choices\":[{\"message\":{\"content\":\"first\"}},"
                 + "{\"message\":{\"content\":\"second\"}}]}")) {
-            var client = new AzureOpenAiLlmClient(settings(server.uri(), "k"), HttpClient.newHttpClient());
+            var client = new AzureOpenAiLlmClient(settings(server.uri(), "k"), FakeServer.credentials("k"), HttpClient.newHttpClient());
             assertThat(client.answer("q", List.of(MockLlmClientTest.passage("S", "t"))).text()).isEqualTo("first");
         }
     }
@@ -49,7 +49,7 @@ public class AzureOpenAiLlmClientTest {
     public void shouldNotLeakBodyOrKeyOnHttpError() throws Exception {
         String key = UUID.randomUUID().toString();
         try (var server = new FakeServer(500, "boom " + key)) {
-            var client = new AzureOpenAiLlmClient(settings(server.uri(), key), HttpClient.newHttpClient());
+            var client = new AzureOpenAiLlmClient(settings(server.uri(), key), FakeServer.credentials(key), HttpClient.newHttpClient());
             assertThatThrownBy(() -> client.answer("q", List.of(MockLlmClientTest.passage("S", "t"))))
                     .isInstanceOf(AiBackendException.class)
                     .hasMessage("Azure OpenAI returned HTTP 500")
@@ -60,7 +60,7 @@ public class AzureOpenAiLlmClientTest {
     @Test
     public void shouldFailCleanlyOnUnparsableBody() throws Exception {
         try (var server = new FakeServer(200, "not json")) {
-            var client = new AzureOpenAiLlmClient(settings(server.uri(), "k"), HttpClient.newHttpClient());
+            var client = new AzureOpenAiLlmClient(settings(server.uri(), "k"), FakeServer.credentials("k"), HttpClient.newHttpClient());
             assertThatThrownBy(() -> client.answer("q", List.of(MockLlmClientTest.passage("S", "t"))))
                     .isInstanceOf(AiBackendException.class);
         }
