@@ -13,7 +13,7 @@ public class SpaRoutingTest extends IntegrationTest {
 
     @DataProvider
     public static Object[][] angularRoutes() {
-        return new Object[][] {{"/services"}, {"/incidents"}, {"/incidents/7"}, {"/assist"}, {"/guide"},
+        return new Object[][] {{"/overview"}, {"/services"}, {"/incidents"}, {"/incidents/7"}, {"/assist"}, {"/guide"},
                 {"/guide/architecture"}, {"/guide/skills"}, {"/guide/design"}, {"/guide/glossary"}};
     }
 

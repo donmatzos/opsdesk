@@ -7,7 +7,7 @@ import { Shell } from './shell';
 @Component({ template: `<h1>Page</h1>` })
 class Dummy {}
 
-const routes = ['services', 'incidents', 'assist', 'guide', 'guide/architecture', 'guide/skills', 'guide/design', 'guide/glossary'].map(
+const routes = ['overview', 'services', 'incidents', 'assist', 'guide', 'guide/architecture', 'guide/skills', 'guide/design', 'guide/glossary'].map(
   (path) => ({ path, component: Dummy }),
 );
 
@@ -26,9 +26,9 @@ describe('Shell', () => {
     const groups = Array.from(el.querySelectorAll('nav h2')).map((h) => h.textContent?.trim());
     expect(groups).toEqual(['Dashboard', 'Project guide']);
     const dashboard = Array.from(el.querySelectorAll('nav section:first-of-type a')).map((a) => a.textContent?.trim());
-    expect(dashboard).toEqual(['Services', 'Incidents', 'Ask the runbooks']);
+    expect(dashboard).toEqual(['Overview', 'Services', 'Incidents', 'Ask the runbooks']);
     const guide = Array.from(el.querySelectorAll('nav section:last-of-type a')).map((a) => a.textContent?.trim());
-    expect(guide).toEqual(['Overview', 'Architecture', 'What this shows', 'Design and accessibility', 'Glossary']);
+    expect(guide).toEqual(['Introduction', 'Architecture', 'What this shows', 'Design and accessibility', 'Glossary']);
   });
 
   it('marks the active link with aria-current', async () => {

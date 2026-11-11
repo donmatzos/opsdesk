@@ -1,0 +1,83 @@
+<header class="page-header">
+  <h1>Overview</h1>
+  <p class="lede">What is healthy, what is not, and what needs attention right now.</p>
+</header>
+
+@if (loading()) {
+  <output class="state-text">Loading overview…</output>
+} @else if (failed()) {
+  <div class="alert" role="alert">
+    <p>The overview could not be loaded. Check that the backend is running, then try again.</p>
+    <button type="button" (click)="reload()">Try again</button>
+  </div>
+} @else {
+  <div class="stack">
+    <section aria-labelledby="summary-heading">
+      <h2 id="summary-heading" class="visually-hidden">Summary</h2>
+      <div class="tiles">
+        <a class="tile" routerLink="/services">
+          <span class="tile-label">Up</span>
+          <span class="tile-value ok">{{ counts().up }}</span>
+          <span class="tile-hint">services</span>
+        </a>
+        <a class="tile" routerLink="/services">
+          <span class="tile-label">Degraded</span>
+          <span class="tile-value warn">{{ counts().degraded }}</span>
+          <span class="tile-hint">services</span>
+        </a>
+        <a class="tile" routerLink="/services">
+          <span class="tile-label">Down</span>
+          <span class="tile-value bad">{{ counts().down }}</span>
+          <span class="tile-hint">services</span>
+        </a>
+        <a class="tile" routerLink="/incidents">
+          <span class="tile-label">Active incidents</span>
+          <span class="tile-value">{{ active().length }}</span>
+          <span class="tile-hint">{{ sev1() }} SEV1</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="card attention" aria-labelledby="attention-heading">
+      <div class="card-head">
+        <h2 id="attention-heading">Needs attention</h2>
+        <a routerLink="/incidents">All incidents</a>
+      </div>
+      @if (active().length) {
+        <ul class="rows">
+          @for (incident of active(); track incident.id) {
+            <li class="row">
+              <app-status-badge [value]="incident.severity" />
+              <span>
+                <a [routerLink]="['/incidents', incident.id]">{{ incident.summary }}</a>
+                <span class="meta mono"> · {{ serviceName(incident) }}</span>
+              </span>
+              <app-status-badge [value]="incident.state" />
+              <time class="meta" [attr.datetime]="incident.openedAt">{{ ago(incident.openedAt) }}</time>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="empty">Nothing needs attention. All incidents are resolved.</p>
+      }
+    </section>
+
+    <section aria-labelledby="services-heading">
+      <h2 id="services-heading" class="section">Services</h2>
+      <ul class="service-grid">
+        @for (service of services.value(); track service.id) {
+          <li class="card service-card">
+            <div class="top">
+              <span class="mono">{{ service.name }}</span>
+              <app-status-badge [value]="service.status" />
+            </div>
+            <span class="meta">{{ service.ownerTeam }} · {{ service.stage }}</span>
+            <span class="meta">
+              {{ activeFor(service.id) }} active {{ activeFor(service.id) === 1 ? 'incident' : 'incidents' }}
+            </span>
+          </li>
+        }
+      </ul>
+    </section>
+  </div>
+}

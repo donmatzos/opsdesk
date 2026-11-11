@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 class SpaForwardController {
 
     // Guide pages are listed one by one (not /guide/*): the Markdown sources are served as static files below /guide/.
-    @GetMapping({"/services", "/incidents", "/incidents/*", "/assist", "/guide", "/guide/architecture",
+    @GetMapping({"/overview", "/services", "/incidents", "/incidents/*", "/assist", "/guide", "/guide/architecture",
             "/guide/skills", "/guide/design", "/guide/glossary"})
     String forwardToIndex() {
         return "forward:/index.html";

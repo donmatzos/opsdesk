@@ -7,7 +7,7 @@ import puppeteer from 'puppeteer';
 
 const require = createRequire(import.meta.url);
 const [baseUrl, basePath] = process.argv.slice(2);
-const ROUTES = ['guide', 'guide/architecture', 'guide/skills', 'guide/design', 'guide/glossary', 'services', 'incidents', 'incidents/2', 'assist', 'no-such-page'];
+const ROUTES = ['overview', 'guide', 'guide/architecture', 'guide/skills', 'guide/design', 'guide/glossary', 'services', 'incidents', 'incidents/2', 'assist', 'no-such-page'];
 const SCHEMES = ['light', 'dark'];
 const VIEWPORTS = [
   { name: 'desktop', width: 1280, height: 900 },
