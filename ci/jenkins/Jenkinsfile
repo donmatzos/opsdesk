@@ -1,0 +1,154 @@
+// MOCK: Jenkins — no Jenkins instance exists. This is the pre-migration setup: the same stages as .github/workflows/ci.yml
+// (and ci/gitlab/templates/maven-openshift.gitlab-ci.yml), run by a declarative pipeline. Validated in CI by
+// tools/ci-templates-check.sh (Groovy parse), never run. See docs/context/cloud-mocks.md.
+//
+// Credentials appear only as IDs inside withCredentials / configFileProvider. Every sh step uses single quotes, so Groovy never
+// interpolates a secret into a command line; the shell reads it from the environment.
+pipeline {
+    agent { label 'linux && docker' }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+        disableConcurrentBuilds()
+        timestamps()
+    }
+
+    environment {
+        IMAGE = 'artifactory.example.com/docker-local/opsdesk'
+        HELM_RELEASE = 'opsdesk'
+        TRIVY = 'aquasec/trivy:0.76.2'
+    }
+
+    stages {
+        stage('Build & test') {
+            steps {
+                sh './mvnw -B -ntp verify'
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: '**/surefire-reports/TEST-*.xml, frontend/target/test-reports/*.xml'
+                    recordCoverage(tools: [[parser: 'JACOCO', pattern: '**/site/jacoco/jacoco.xml']])
+                }
+            }
+        }
+
+        stage('SonarQube') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    sh './mvnw -B -ntp verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar'
+                }
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Scans') {
+            parallel {
+                stage('Secrets (gitleaks)') {
+                    steps {
+                        sh 'docker run --rm -v "$PWD:/repo:ro" ghcr.io/gitleaks/gitleaks:v8.30.1 git /repo --redact --no-banner --verbose'
+                    }
+                }
+                stage('Trivy repository') {
+                    steps {
+                        sh 'docker run --rm -v "$PWD:/repo" -w /repo "$TRIVY" fs --config trivy.yaml --scanners vuln,secret,misconfig --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 .'
+                    }
+                }
+            }
+        }
+
+        stage('Helm check') {
+            steps {
+                sh 'tools/helm-check.sh'
+            }
+        }
+
+        stage('Image') {
+            steps {
+                sh 'docker build -t opsdesk:ci .'
+                // Fixable HIGH and CRITICAL findings fail the build, like the gate in ci.yml.
+                sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY" image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 opsdesk:ci'
+                // Random UID, read-only root filesystem, throwaway PostgreSQL: the way OpenShift runs it.
+                sh 'tools/ci-smoke.sh opsdesk:ci'
+            }
+        }
+
+        stage('Publish') {
+            when { branch 'main' }
+            steps {
+                // MOCK: Artifactory. User and token are injected as environment variables for this block only.
+                withCredentials([usernamePassword(credentialsId: 'artifactory-publisher', usernameVariable: 'ARTIFACTORY_USER', passwordVariable: 'ARTIFACTORY_TOKEN')]) {
+                    sh '''
+                        echo "$ARTIFACTORY_TOKEN" | docker login artifactory.example.com -u "$ARTIFACTORY_USER" --password-stdin
+                        tag="sha-$(git rev-parse --short=7 HEAD)"
+                        docker tag opsdesk:ci "$IMAGE:$tag"
+                        docker push "$IMAGE:$tag"
+                    '''
+                    configFileProvider([configFile(fileId: 'artifactory-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                        sh './mvnw -B -ntp -Partifactory deploy -DskipTests -s "$MAVEN_SETTINGS"'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy dev') {
+            when {
+                allOf {
+                    branch 'main'
+                    environment name: 'OPENSHIFT_DEPLOY', value: 'true'
+                }
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'openshift-dev-server', variable: 'OPENSHIFT_SERVER'),
+                    string(credentialsId: 'openshift-dev-token', variable: 'OPENSHIFT_TOKEN')
+                ]) {
+                    // oc and helm are installed on the agent. Same deploy, smoke test and rollback as the deploy-dev job in ci.yml.
+                    sh '''
+                        oc login --token="$OPENSHIFT_TOKEN" --server="$OPENSHIFT_SERVER" > /dev/null
+                        oc project "$OPENSHIFT_NAMESPACE_DEV"
+                        helm upgrade --install "$HELM_RELEASE" deploy/helm/opsdesk -n "$OPENSHIFT_NAMESPACE_DEV" \
+                          -f deploy/helm/opsdesk/values-dev.yaml --set image.repository="$IMAGE" \
+                          --set image.tag="sha-$(git rev-parse --short=7 HEAD)" --rollback-on-failure --wait --timeout 6m
+                        url="https://$(oc get route "$HELM_RELEASE" -n "$OPENSHIFT_NAMESPACE_DEV" -o jsonpath='{.spec.host}')"
+                        if ! tools/smoke-test.sh "$url" 180; then
+                          revisions=$(helm history "$HELM_RELEASE" -n "$OPENSHIFT_NAMESPACE_DEV" -o json | jq length) || revisions=unknown
+                          if [ "$revisions" = 1 ]; then echo "First release: nothing to roll back to."; else helm rollback "$HELM_RELEASE" -n "$OPENSHIFT_NAMESPACE_DEV" --wait; fi
+                          exit 1
+                        fi
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy prod') {
+            // MOCK: production deploy. Only for a tag, and only after a person confirms.
+            when { buildingTag() }
+            steps {
+                input message: 'Deploy this tag to production?', ok: 'Deploy'
+                withCredentials([
+                    string(credentialsId: 'openshift-prod-server', variable: 'OPENSHIFT_SERVER'),
+                    string(credentialsId: 'openshift-prod-token', variable: 'OPENSHIFT_TOKEN')
+                ]) {
+                    sh '''
+                        oc login --token="$OPENSHIFT_TOKEN" --server="$OPENSHIFT_SERVER" > /dev/null
+                        helm upgrade --install "$HELM_RELEASE" deploy/helm/opsdesk -n "$OPENSHIFT_NAMESPACE_PROD" \
+                          -f deploy/helm/opsdesk/values-prod.yaml --set image.repository="$IMAGE" \
+                          --set image.tag="${TAG_NAME#v}" --rollback-on-failure --wait --timeout 6m
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo 'Build failed: see the failing stage above.'
+        }
+        cleanup {
+            cleanWs()
+        }
+    }
+}

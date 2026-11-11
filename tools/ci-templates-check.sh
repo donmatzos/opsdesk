@@ -70,6 +70,29 @@ gitlab_jobs() {
   done
 }
 
+# --- Jenkins ----------------------------------------------------------------------------------------------------------
+groovy_image=groovy:4.0-jdk21
+jenkinsfile=ci/jenkins/Jenkinsfile
+
+jenkins_parse() {
+  docker run --rm -v "${root}:/repo:ro" -w /repo "${groovy_image}" \
+    groovy -e "new GroovyShell().parse(new File('${jenkinsfile}')); println 'Jenkinsfile parses as Groovy'"
+}
+
+# A double-quoted Groovy string in an sh step is interpolated by Groovy, which would put a secret into the command line.
+jenkins_quotes() {
+  if grep -nE '(^|[[:space:]({])sh +"' "${jenkinsfile}"; then
+    echo "an sh step starts with a double-quoted string; use single quotes" >&2
+    return 1
+  fi
+  echo "every sh step uses single-quoted strings"
+}
+
+check_jenkins() {
+  phase "jenkins: Groovy parse" jenkins_parse
+  phase "jenkins: no Groovy interpolation in sh steps" jenkins_quotes
+}
+
 check_gitlab() {
   phase "gitlab: schema (template + consumer)" gitlab_schema
   phase "gitlab: job set of a default-branch pipeline" gitlab_jobs
@@ -78,7 +101,8 @@ check_gitlab() {
 target=${1:-all}
 case "${target}" in
   gitlab) check_gitlab ;;
-  all) check_gitlab ;;
+  jenkins) check_jenkins ;;
+  all) check_gitlab; check_jenkins ;;
   *) echo "usage: $0 [gitlab|jenkins|ansible|all]" >&2; exit 2 ;;
 esac
 echo "CI TEMPLATES CHECK PASS (${target})"
