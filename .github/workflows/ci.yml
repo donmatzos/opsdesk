@@ -96,13 +96,13 @@ jobs:
   terraform:
     name: Terraform ${{ matrix.dir }} (fmt, validate, tflint)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    # MOCK: Datadog monitors/dashboard and Azure OpenAI/AI Search are validated only; plan/apply never run (no accounts).
+    # MOCK: Datadog monitors/dashboard, Azure OpenAI/AI Search and AWX job templates are validated only; plan/apply never run (no accounts).
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        dir: [datadog, azure]
+        dir: [datadog, azure, awx]
     defaults:
       run:
         working-directory: infra/terraform/${{ matrix.dir }}
