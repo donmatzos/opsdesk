@@ -1,0 +1,42 @@
+// Design tokens (see docs/guide/design.md). Colours exist only here; components use the custom properties.
+// Light and dark are designed together and switch with the OS setting. All pairs are checked by tools/contrast_check.py.
+:root {
+  color-scheme: light dark;
+
+  --bg: #ffffff;
+  --surface: #f1f5f9;
+  --border: #64748b;
+  --text: #0f172a;
+  --muted: #475569;
+  --link: #0369a1;
+  --accent: #15803d;
+  --on-accent: #ffffff;
+  --danger: #b91c1c;
+  --warning: #92400e;
+  --info: #1d4ed8;
+  --focus: #1d4ed8;
+
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --radius: 0.375rem;
+  --transition: 150ms ease-out;
+  --content-width: 72rem;
+  --prose-width: 70ch;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --border: #64748b;
+    --text: #f8fafc;
+    --muted: #cbd5e1;
+    --link: #7dd3fc;
+    --accent: #22c55e;
+    --on-accent: #052e16;
+    --danger: #f87171;
+    --warning: #fbbf24;
+    --info: #60a5fa;
+    --focus: #93c5fd;
+  }
+}

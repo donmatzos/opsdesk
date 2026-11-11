@@ -31,11 +31,11 @@ How the opsdesk UI is designed and why. Binding for the dashboard and the guide:
 - Top bar (brand, repo link) and a sidebar with two groups: **Dashboard** (Services, Incidents, Ask the runbooks) and **Project guide** (Overview, Architecture, What this shows, Design and accessibility, Glossary). Same placement on every page.
 - Breakpoints 375 / 768 / 1024 / 1440. From 1024 px the sidebar is always visible; below it collapses into a disclosure button (`aria-expanded`, `aria-controls`), no hover-only menus.
 - Content max width 72rem, prose max 70ch. Tables scroll horizontally inside their own region on small screens, never the page.
-- Skip link first in tab order. One `h1` per page. Breadcrumbs only below `guide/`. After a route change focus moves to `main`; the page title is "page - opsdesk".
+- Skip link first in tab order. One `h1` per page. Breadcrumbs only below `guide/`. After a route change focus moves to `main`; the page title is "page · opsdesk".
 - Primary action per view is a single filled button; everything else is secondary.
 
 ## Visual language
-Colours exist only as CSS custom properties (`src/styles/_tokens.scss`), switched by `prefers-color-scheme`. Surfaces: `bg` (page), `surface` (cards, sidebar, tables). Ratios below are WCAG relative-luminance contrast, computed for every pair.
+Colours exist only as CSS custom properties (`src/styles/_tokens.scss`), switched by `prefers-color-scheme`. Surfaces: `bg` (page), `surface` (cards, sidebar, tables). Ratios below are WCAG relative-luminance contrast; `python3 tools/contrast_check.py` checks every pair of the real token file (also in CI).
 
 | Token (on background) | Dark | Ratio | Light | Ratio | Needs |
 |---|---|---|---|---|---|
@@ -55,7 +55,7 @@ Colours exist only as CSS custom properties (`src/styles/_tokens.scss`), switche
 Status colours are never the only signal: every status shows an icon and its name (`UP`, `DEGRADED`, `DOWN`, `OPEN`, `MITIGATED`, `RESOLVED`, `SEV1`-`SEV3`).
 
 ## Typography
-IBM Plex Sans for text; JetBrains Mono for ids, code and numbers in tables (tabular figures). Scale 12 / 14 / 16 / 18 / 24 / 32 px, body 16 px, line height 1.5, weights 400 / 500 / 600. Text never below 12 px; wrapping preferred over truncation.
+IBM Plex Sans for text; JetBrains Mono for ids, code and numbers in tables (tabular figures). Scale 12 / 14 / 16 / 18 / 24 / 32 px, body 16 px, line height 1.5, weights 400 / 600. Text never below 12 px; wrapping preferred over truncation.
 
 ## Components and states
 - **Button / link:** visible `:focus-visible` ring (2 px, `focus` token, offset 2 px), hover and pressed states distinct, minimum target 44 x 44 px, disabled = reduced emphasis plus the `disabled` attribute.
