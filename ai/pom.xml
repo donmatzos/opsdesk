@@ -41,6 +41,19 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <!-- The runbooks live in docs/runbooks and ship inside the jar, so assist works in the container -->
+            <resource>
+                <directory>${project.basedir}/../docs/runbooks</directory>
+                <targetPath>runbooks</targetPath>
+                <includes>
+                    <include>*.md</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <!-- Coverage: prepare-agent appends to @{argLine}; the XML report feeds SonarCloud -->
             <plugin>

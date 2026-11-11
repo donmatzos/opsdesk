@@ -30,6 +30,10 @@ opsdesk:
   mcp:
     # Bearer token for /mcp from the environment. Empty = MCP disabled (503); the rest of the app is unaffected.
     token: ${OPSDESK_MCP_TOKEN:}
+  ai:
+    runbooks:
+      # Packaged into the ai jar from docs/runbooks (see ai/pom.xml).
+      location: classpath*:runbooks/*.md
 
 server:
   shutdown: graceful
